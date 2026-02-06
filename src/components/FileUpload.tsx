@@ -56,7 +56,7 @@ export default function FileUpload({ onFileContent }: FileUploadProps) {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       className={`
-        relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer
+        relative border-2 border-dashed rounded-lg sm:rounded-xl p-3 sm:p-6 text-center cursor-pointer
         transition-all duration-200 ease-in-out
         ${isDragging
           ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
@@ -70,9 +70,9 @@ export default function FileUpload({ onFileContent }: FileUploadProps) {
         onChange={handleInputChange}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center sm:flex-col gap-2 sm:gap-2">
         <svg
-          className={`w-8 h-8 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
+          className={`w-5 h-5 sm:w-8 sm:h-8 flex-shrink-0 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -84,11 +84,12 @@ export default function FileUpload({ onFileContent }: FileUploadProps) {
             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
           />
         </svg>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-left sm:text-center">
           <span className="font-medium text-gray-900 dark:text-gray-200">
-            Drop your .md file here
-          </span>{' '}
-          or click to browse
+            <span className="hidden sm:inline">Drop your .md file here or </span>
+            <span className="sm:hidden">Upload </span>
+            click to browse
+          </span>
         </p>
       </div>
     </div>

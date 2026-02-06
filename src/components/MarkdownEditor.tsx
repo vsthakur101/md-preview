@@ -47,7 +47,7 @@ Happy writing!
 export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
           Markdown
         </span>
@@ -60,7 +60,7 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
         onChange={(e) => onChange(e.target.value)}
         placeholder={PLACEHOLDER}
         className="
-          flex-1 w-full p-4 resize-none
+          flex-1 w-full p-3 sm:p-4 resize-none
           bg-white dark:bg-gray-950
           text-gray-900 dark:text-gray-100
           font-mono text-sm leading-relaxed

@@ -45,7 +45,7 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
   return (
     <div className="group relative bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
       {/* Card Content */}
-      <Link href={`/library/${id}`} className="block p-5">
+      <Link href={`/library/${id}`} className="block p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -71,20 +71,20 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
         </p>
       </Link>
 
-      {/* Delete Button */}
-      <div className="absolute top-3 right-14 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Delete Button - visible on mobile, hover on desktop */}
+      <div className="absolute top-3 right-14 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         {showConfirm ? (
           <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-1">
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="px-2 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 sm:px-2 sm:py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-50"
             >
               {isDeleting ? '...' : 'Yes'}
             </button>
             <button
               onClick={() => setShowConfirm(false)}
-              className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="px-3 py-1.5 sm:px-2 sm:py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               No
             </button>
@@ -95,7 +95,7 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
               e.preventDefault();
               setShowConfirm(true);
             }}
-            className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 bg-white dark:bg-gray-800 rounded-lg shadow-sm transition-colors"
+            className="p-2 sm:p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 bg-white dark:bg-gray-800 rounded-lg shadow-sm transition-colors"
             title="Delete"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

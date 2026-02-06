@@ -24,13 +24,13 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+      <div className="flex items-center px-3 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
           Preview
         </span>
       </div>
-      <div className="flex-1 overflow-auto p-6 bg-white dark:bg-gray-950">
-        <article className="prose prose-gray dark:prose-invert max-w-none prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 bg-white dark:bg-gray-950">
+        <article className="prose prose-sm sm:prose-base prose-gray dark:prose-invert max-w-none prose-headings:font-semibold prose-h1:text-2xl sm:prose-h1:text-3xl prose-h2:text-xl sm:prose-h2:text-2xl prose-h3:text-lg sm:prose-h3:text-xl prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
