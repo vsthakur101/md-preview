@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { fileInputSchema, buildPreview } from '@/lib/validation';
 
 // GET all files belonging to the signed-in user
 export async function GET() {
@@ -41,28 +42,22 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { title, content } = body;
+    const parsed = fileInputSchema.safeParse(await request.json());
 
-    if (!title || !content) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Title and content are required' },
+        { error: 'Invalid input', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    // Create preview from content (first 150 chars, strip markdown)
-    const preview = content
-      .replace(/[#*`\[\]()>-]/g, '')
-      .replace(/\n+/g, ' ')
-      .trim()
-      .substring(0, 150);
+    const { title, content } = parsed.data;
 
     const file = await prisma.markdownFile.create({
       data: {
         title,
         content,
-        preview: preview + (content.length > 150 ? '...' : ''),
+        preview: buildPreview(content),
         userId: session.user.id,
       },
     });
