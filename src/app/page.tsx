@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import FileUpload from '@/components/FileUpload';
 import MarkdownEditor from '@/components/MarkdownEditor';
@@ -10,16 +10,6 @@ import UserMenu from '@/components/UserMenu';
 
 export default function Home() {
   const [markdown, setMarkdown] = useState('');
-
-  // Load content from sessionStorage if coming from library edit
-  useEffect(() => {
-    const editContent = sessionStorage.getItem('editContent');
-    if (editContent) {
-      setMarkdown(editContent);
-      sessionStorage.removeItem('editContent');
-      sessionStorage.removeItem('editTitle');
-    }
-  }, []);
 
   const handleFileContent = (content: string) => {
     setMarkdown(content);

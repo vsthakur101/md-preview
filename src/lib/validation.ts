@@ -1,0 +1,37 @@
+import { z } from 'zod';
+
+/**
+ * Upper bound on stored markdown. `MarkdownFile.content` is an unbounded
+ * Postgres `TEXT` column, so without this a single request could persist an
+ * arbitrarily large blob. 256 KB is comfortably larger than any hand-written
+ * document while capping abuse / storage blow-up.
+ */
+export const MAX_CONTENT_BYTES = 256_000;
+export const MAX_TITLE_LENGTH = 200;
+
+export const fileInputSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(MAX_TITLE_LENGTH),
+  content: z
+    .string()
+    .min(1, 'Content is required')
+    .max(MAX_CONTENT_BYTES, 'Content is too large'),
+});
+
+export type FileInput = z.infer<typeof fileInputSchema>;
+
+/**
+ * Build the denormalized list preview from markdown content: strip the most
+ * common markdown punctuation, collapse whitespace, and truncate.
+ *
+ * Shared by the create and update routes so a file's preview stays consistent
+ * with its content after every write.
+ */
+export function buildPreview(content: string): string {
+  const stripped = content
+    .replace(/[#*`\[\]()>-]/g, '')
+    .replace(/\n+/g, ' ')
+    .trim()
+    .substring(0, 150);
+
+  return stripped + (content.length > 150 ? '...' : '');
+}

@@ -66,12 +66,7 @@ export default function FileViewPage({ params }: { params: Promise<{ id: string 
   };
 
   const handleEdit = () => {
-    if (file) {
-      // Store content in sessionStorage and redirect to editor
-      sessionStorage.setItem('editContent', file.content);
-      sessionStorage.setItem('editTitle', file.title);
-      router.push('/');
-    }
+    router.push(`/library/${id}/edit`);
   };
 
   if (isLoading) {
