@@ -36,6 +36,17 @@ cp .env.example .env
 - `DATABASE_URL` — your PostgreSQL connection string.
 - `AUTH_SECRET` — generate with `npx auth secret` (or `openssl rand -base64 33`).
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — from the Google Cloud Console.
+- `AUTH_ALLOWED_EMAILS` / `AUTH_ALLOWED_DOMAINS` — *optional* sign-in allowlist.
+  Leave both unset for open sign-up; set either to restrict who can sign in (see
+  [src/lib/access.ts](src/lib/access.ts)).
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — *optional* (recommended
+  in production) per-user write rate limiting via Upstash Redis. When unset, the
+  limiter is a no-op (see [src/lib/ratelimit.ts](src/lib/ratelimit.ts)).
+
+> **Security headers:** baseline response headers (HSTS, `X-Content-Type-Options`,
+> `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) are applied to every
+> route in [next.config.ts](next.config.ts). A Content-Security-Policy is tracked
+> separately — see `docs/IMPROVEMENT_PLAN.md` §2.3.
 
 ### 2. Create Google OAuth credentials
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { fileInputSchema, buildPreview } from '@/lib/validation';
+import { enforceWriteLimit } from '@/lib/ratelimit';
 
 // GET all files belonging to the signed-in user
 export async function GET() {
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const limited = await enforceWriteLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const parsed = fileInputSchema.safeParse(await request.json());
