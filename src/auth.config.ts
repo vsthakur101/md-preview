@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from 'next-auth';
 import Google from 'next-auth/providers/google';
+import { isEmailAllowed } from '@/lib/access';
 
 /**
  * Edge-safe Auth.js configuration.
@@ -15,6 +16,11 @@ export const authConfig = {
     signIn: '/signin',
   },
   callbacks: {
+    // Gate sign-in behind the optional email/domain allowlist. Returning false
+    // aborts the flow before any user/account row is persisted.
+    signIn({ user, profile }) {
+      return isEmailAllowed(user.email ?? profile?.email);
+    },
     // Persist the database user id onto the JWT on first sign-in.
     jwt({ token, user }) {
       if (user) {
