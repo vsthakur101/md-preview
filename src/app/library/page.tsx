@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import FileCard from '@/components/FileCard';
 import UserMenu from '@/components/UserMenu';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface MarkdownFile {
   id: string;
@@ -73,10 +74,11 @@ export default function LibraryPage() {
                 </h1>
               </div>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {files.length} {files.length === 1 ? 'file' : 'files'}
               </span>
+              <ThemeToggle />
               <UserMenu />
             </div>
           </div>

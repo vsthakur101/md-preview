@@ -7,6 +7,7 @@ import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownPreview from '@/components/MarkdownPreview';
 import SaveButton from '@/components/SaveButton';
 import UserMenu from '@/components/UserMenu';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function Home() {
   const [markdown, setMarkdown] = useState('');
@@ -58,6 +59,7 @@ export default function Home() {
                   </svg>
                   Library
                 </Link>
+                <ThemeToggle />
                 <UserMenu />
               </div>
             </div>
@@ -80,7 +82,8 @@ export default function Home() {
                 </svg>
                 Library
               </Link>
-              <div className="hidden sm:block">
+              <div className="hidden sm:flex items-center gap-1">
+                <ThemeToggle />
                 <UserMenu />
               </div>
             </div>
