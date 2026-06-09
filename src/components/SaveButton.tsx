@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Save, Check, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface SaveButtonProps {
   content: string;
@@ -13,12 +16,11 @@ export default function SaveButton({ content, onSaved }: SaveButtonProps) {
   const [showTitleInput, setShowTitleInput] = useState(false);
   const [title, setTitle] = useState('');
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!content.trim()) {
       alert('Please write some markdown content first');
       return;
     }
-
     setShowTitleInput(true);
   };
 
@@ -27,25 +29,19 @@ export default function SaveButton({ content, onSaved }: SaveButtonProps) {
       alert('Please enter a title');
       return;
     }
-
     setIsLoading(true);
-
     try {
       const response = await fetch('/api/files', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: title.trim(), content }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to save');
-      }
+      if (!response.ok) throw new Error('Failed to save');
 
       setShowSuccess(true);
       setShowTitleInput(false);
       setTitle('');
       onSaved?.();
-
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (error) {
       console.error('Save error:', error);
@@ -63,67 +59,46 @@ export default function SaveButton({ content, onSaved }: SaveButtonProps) {
   if (showTitleInput) {
     return (
       <div className="flex items-center gap-2">
-        <input
-          type="text"
+        <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter title..."
-          className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter title…"
+          className="h-9 w-40 sm:w-48"
           autoFocus
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleConfirmSave();
             if (e.key === 'Escape') handleCancel();
           }}
         />
-        <button
-          onClick={handleConfirmSave}
-          disabled={isLoading}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-        >
-          {isLoading ? 'Saving...' : 'Save'}
-        </button>
-        <button
-          onClick={handleCancel}
-          className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-        >
+        <Button size="sm" onClick={handleConfirmSave} disabled={isLoading}>
+          {isLoading ? <Loader2 className="size-4 animate-spin" /> : 'Save'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={handleCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <button
+    <Button
       onClick={handleSave}
       disabled={isLoading || !content.trim()}
-      className={`
-        flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all
-        ${showSuccess
-          ? 'bg-green-600 text-white'
-          : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
-        }
-      `}
+      variant={showSuccess ? 'default' : 'default'}
+      className={showSuccess ? 'bg-green-600 hover:bg-green-600 text-white' : ''}
     >
       {showSuccess ? (
         <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="size-4" />
           Saved!
         </>
       ) : (
         <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-            />
-          </svg>
-          Save to Library
+          <Save className="size-4" />
+          <span className="hidden sm:inline">Save to Library</span>
+          <span className="sm:hidden">Save</span>
         </>
       )}
-    </button>
+    </Button>
   );
 }
