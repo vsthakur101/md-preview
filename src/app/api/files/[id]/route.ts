@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-// GET single file
+// GET single file (only if it belongs to the signed-in user)
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
 
-    const file = await prisma.markdownFile.findUnique({
-      where: { id },
+    const file = await prisma.markdownFile.findFirst({
+      where: { id, userId: session.user.id },
     });
 
     if (!file) {
@@ -29,14 +36,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE file
+// DELETE file (only if it belongs to the signed-in user)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
 
-    await prisma.markdownFile.delete({
-      where: { id },
+    // Scope the delete to the owner so a user can never delete another
+    // user's file by guessing its id.
+    const { count } = await prisma.markdownFile.deleteMany({
+      where: { id, userId: session.user.id },
     });
+
+    if (count === 0) {
+      return NextResponse.json(
+        { error: 'File not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

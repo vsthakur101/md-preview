@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import FileCard from '@/components/FileCard';
+import UserMenu from '@/components/UserMenu';
 
 interface MarkdownFile {
   id: string;
@@ -72,9 +73,12 @@ export default function LibraryPage() {
                 </h1>
               </div>
             </div>
-            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              {files.length} {files.length === 1 ? 'file' : 'files'}
-            </span>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                {files.length} {files.length === 1 ? 'file' : 'files'}
+              </span>
+              <UserMenu />
+            </div>
           </div>
         </div>
       </header>

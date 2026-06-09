@@ -1,17 +1,71 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+A markdown editor + preview app with a per-user private library. Each user signs in
+with Google (via [Auth.js / NextAuth v5](https://authjs.dev)) and only ever sees and
+manages **their own** saved files.
+
+## Authentication & per-user data
+
+Every saved markdown file is owned by a `User` (`MarkdownFile.userId`). All API
+routes resolve the current session with `auth()` and scope their queries to
+`session.user.id`, so users cannot read, edit, or delete another user's files.
+Page routes are gated by `src/middleware.ts`, which redirects unauthenticated
+visitors to `/signin`.
+
+Key files:
+
+| File | Purpose |
+|------|---------|
+| `src/auth.config.ts` | Edge-safe Auth.js config (providers, callbacks) used by middleware |
+| `src/auth.ts` | Full Auth.js instance with the Prisma adapter (`handlers`, `auth`, `signIn`, `signOut`) |
+| `src/middleware.ts` | Redirects unauthenticated users to `/signin` |
+| `src/app/api/auth/[...nextauth]/route.ts` | NextAuth route handler |
+| `src/app/signin/page.tsx` | "Continue with Google" sign-in screen |
+| `src/components/UserMenu.tsx` | Avatar + sign-out menu in the header |
+
 ## Getting Started
 
-First, run the development server:
+### 1. Configure environment variables
+
+Copy `.env.example` to `.env` and fill it in:
+
+```bash
+cp .env.example .env
+```
+
+- `DATABASE_URL` — your PostgreSQL connection string.
+- `AUTH_SECRET` — generate with `npx auth secret` (or `openssl rand -base64 33`).
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — from the Google Cloud Console.
+
+### 2. Create Google OAuth credentials
+
+1. Go to the [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials).
+2. Configure the OAuth consent screen (External), add your email as a test user.
+3. Create an **OAuth client ID** → **Web application**.
+4. Add **Authorized redirect URIs**:
+   - `http://localhost:3000/api/auth/callback/google` (local)
+   - `https://your-domain.com/api/auth/callback/google` (production)
+5. Copy the client ID/secret into `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
+
+### 3. Apply the database schema
+
+The schema adds the Auth.js tables (`User`, `Account`, `Session`,
+`VerificationToken`) and an owner relation on `MarkdownFile`. Apply it with:
+
+```bash
+npx prisma migrate dev --name add-google-auth   # creates + runs a migration
+# or, without migration history:
+npx prisma db push
+```
+
+> **Note:** `MarkdownFile.userId` is required. If you already have rows from
+> before auth was added, either truncate the table or backfill `userId` to a
+> real user before applying the schema.
+
+### 4. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

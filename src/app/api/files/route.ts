@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 
-// GET all files
+// GET all files belonging to the signed-in user
 export async function GET() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const files = await prisma.markdownFile.findMany({
+      where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -24,8 +32,14 @@ export async function GET() {
   }
 }
 
-// POST new file
+// POST new file owned by the signed-in user
 export async function POST(request: NextRequest) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { title, content } = body;
@@ -49,6 +63,7 @@ export async function POST(request: NextRequest) {
         title,
         content,
         preview: preview + (content.length > 150 ? '...' : ''),
+        userId: session.user.id,
       },
     });
 
