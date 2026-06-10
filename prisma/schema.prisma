@@ -11,16 +11,55 @@ datasource db {
 }
 
 model MarkdownFile {
-  id        String   @id @default(cuid())
-  title     String
-  content   String   @db.Text
-  preview   String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String      @id @default(cuid())
+  title      String
+  content    String      @db.Text
+  preview    String
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Kept so `prisma db push` from this branch doesn't drop the column that the
+  // sharing feature added to the shared DB. Null = private.
+  shareId    String?     @unique
+  highlights Highlight[]
+  reactions  Reaction[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Reading platform — reader engagement (per user, per file).
+// ---------------------------------------------------------------------------
+
+model Highlight {
+  id        String       @id @default(cuid())
+  fileId    String
+  userId    String
+  // Character offsets into the article's concatenated text content.
+  startOff  Int
+  endOff    Int
+  text      String       @db.Text
+  color     String       @default("yellow")
+  createdAt DateTime     @default(now())
+  file      MarkdownFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([fileId, userId])
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  fileId    String
+  userId    String
+  paragraph Int
+  type      String // 'heart' | 'idea'
+  createdAt DateTime     @default(now())
+  file      MarkdownFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, userId, paragraph, type])
+  @@index([fileId, userId])
 }
 
 // ---------------------------------------------------------------------------
@@ -36,6 +75,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   files         MarkdownFile[]
+  highlights    Highlight[]
+  reactions     Reaction[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }

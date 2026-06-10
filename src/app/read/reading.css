@@ -1,0 +1,800 @@
+/* ---------------------------------------------------------------------------
+   Reading platform — warm calm canvas + long-form typography.
+   Scoped to .reader-root so it never touches the rest of the app.
+   --------------------------------------------------------------------------- */
+
+.reader-root {
+  --reading-bg: #fafaf8;
+  --reading-text: #1f1d1a;
+  --reading-muted: #6f6a62;
+  --reading-muted-strong: #4a463f;
+  --reading-accent: #a8551e;
+  --reading-accent-strong: #8a4417;
+  --reading-rule: #e3ded5;
+  --reading-card: #f3f0ea;
+  --reading-card-border: #e6e1d8;
+  --reading-inline-code: #ece8e0;
+  --reading-code-bg: #f5f2ec;
+
+  background: var(--reading-bg);
+  color: var(--reading-text);
+  min-height: 100vh;
+}
+
+.dark .reader-root {
+  --reading-bg: #1a1a18;
+  --reading-text: #e8e6e1;
+  --reading-muted: #918b81;
+  --reading-muted-strong: #b8b2a8;
+  --reading-accent: #d98a4f;
+  --reading-accent-strong: #e3a06f;
+  --reading-rule: #322f2a;
+  --reading-card: #232220;
+  --reading-card-border: #34322d;
+  --reading-inline-code: #2a2824;
+  --reading-code-bg: #201f1c;
+}
+
+.reader-root ::selection {
+  background: color-mix(in srgb, var(--reading-accent) 25%, transparent);
+}
+
+/* ---- The article: measure-capped, serif, generous rhythm ---------------- */
+.article {
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+  font-size: 1.27rem; /* ~20px */
+  line-height: 1.75;
+  color: var(--reading-text);
+  /* The single highest-impact rule: cap the measure. */
+  max-width: 42rem; /* ~672px, ~66ch */
+  margin: 0 auto;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+}
+
+.article p {
+  margin: 0 0 1.5rem;
+}
+
+.article > p:first-of-type {
+  margin-top: 0;
+}
+
+/* Headings (serif, content voice) */
+.article h2,
+.article h3,
+.article h4 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 5rem; /* so anchor jumps clear the top chrome */
+}
+
+.article h2 {
+  font-size: 1.95rem;
+  margin: 3.75rem 0 1.25rem;
+  padding-top: 2.5rem;
+  position: relative;
+}
+
+/* Section divider ornament — a "chunk complete" beat between sections. */
+.article h2::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.25rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--reading-accent);
+  opacity: 0.55;
+}
+
+.article h3 {
+  font-size: 1.4rem;
+  margin: 2.5rem 0 1rem;
+}
+
+/* Drop caps on the lead paragraph and each section opener. */
+.article > p:first-of-type::first-letter,
+.article h2 + p::first-letter {
+  float: left;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 3.4em;
+  line-height: 0.78;
+  font-weight: 600;
+  padding: 0.02em 0.1em 0 0;
+  color: var(--reading-accent);
+}
+
+.article a {
+  color: var(--reading-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--reading-accent) 45%, transparent);
+}
+.article a:hover {
+  text-decoration-color: var(--reading-accent);
+}
+
+.article ul,
+.article ol {
+  margin: 0 0 1.5rem;
+  padding-left: 1.4rem;
+}
+.article li {
+  margin: 0.4rem 0;
+}
+
+.article img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.6rem;
+  margin: 2.25rem 0;
+}
+
+.article hr {
+  border: none;
+  height: 1px;
+  background: var(--reading-rule);
+  margin: 3rem auto;
+  width: 40%;
+}
+
+.article strong {
+  font-weight: 650;
+}
+
+/* ---- Pull-quotes — large serif rest-stops ------------------------------- */
+.article .pullquote {
+  margin: 2.75rem 0;
+  padding: 0 0 0 1.5rem;
+  border-left: 3px solid var(--reading-accent);
+  font-size: 1.6rem;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--reading-accent-strong);
+}
+.article .pullquote p {
+  margin: 0;
+}
+
+/* Ordinary (longer) blockquotes */
+.article blockquote:not(.pullquote) {
+  margin: 1.75rem 0;
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--reading-rule);
+  color: var(--reading-muted-strong);
+  font-style: italic;
+}
+.article blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- :::key takeaway card ----------------------------------------------- */
+.article .key-callout {
+  margin: 2.25rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--reading-card);
+  border: 1px solid var(--reading-card-border);
+  border-left: 3px solid var(--reading-accent);
+  border-radius: 0.6rem;
+}
+.article .key-callout-label {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: var(--reading-accent);
+  margin-bottom: 0.5rem;
+}
+.article .key-callout > p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- :::aside collapsible deep-dive (native <details>) ------------------ */
+.article .aside-block {
+  margin: 2.25rem 0;
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.6rem;
+  background: var(--reading-card);
+  padding: 0 1.5rem;
+}
+.article .aside-summary {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--reading-muted-strong);
+  cursor: pointer;
+  padding: 1rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.article .aside-summary::-webkit-details-marker {
+  display: none;
+}
+.article .aside-summary::before {
+  content: "›";
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+  color: var(--reading-accent);
+}
+.article .aside-block[open] > .aside-summary::before {
+  transform: rotate(90deg);
+}
+.article .aside-block[open] {
+  padding-bottom: 0.75rem;
+}
+
+/* ---- Code ---------------------------------------------------------------- */
+.article :not(pre) > code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.86em;
+  background: var(--reading-inline-code);
+  padding: 0.12em 0.36em;
+  border-radius: 0.3rem;
+}
+.article pre {
+  background: var(--reading-code-bg);
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.6rem;
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  margin: 2rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.article pre code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  background: none;
+  padding: 0;
+}
+/* rehype-pretty-code dual theme: token colors follow the app theme. */
+.article code[data-theme] span,
+.article pre[data-theme] code span {
+  color: var(--shiki-light);
+}
+.dark .article code[data-theme] span,
+.dark .article pre[data-theme] code span {
+  color: var(--shiki-dark);
+}
+.article [data-line] {
+  display: inline-block;
+  width: 100%;
+}
+.article [data-highlighted-line] {
+  background: color-mix(in srgb, var(--reading-accent) 10%, transparent);
+}
+
+/* ---- Tables -------------------------------------------------------------- */
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0;
+  font-size: 0.95rem;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.article th,
+.article td {
+  border: 1px solid var(--reading-card-border);
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+}
+.article th {
+  background: var(--reading-card);
+  font-weight: 600;
+}
+
+/* ---- Focus mode (Phase 3): dim everything but the spotlighted block ----- */
+.reader-root[data-focus="on"] .article > * {
+  transition: opacity 0.25s ease, filter 0.25s ease;
+  opacity: 0.32;
+}
+.reader-root[data-focus="on"] .article > .reading-focus {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Reader chrome: progress bar, auto-hiding top bar, floating TOC, resume pill.
+   All sans-serif (UI chrome) and themed via the --reading-* vars above.
+   --------------------------------------------------------------------------- */
+
+.reading-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  background: transparent;
+}
+.reading-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--reading-accent);
+  transition: width 0.1s linear;
+}
+
+.reading-chrome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 3.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  background: color-mix(in srgb, var(--reading-bg) 86%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--reading-rule);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.reading-chrome-back {
+  display: flex;
+  align-items: center;
+  color: var(--reading-muted-strong);
+}
+.reading-chrome-back:hover {
+  color: var(--reading-text);
+}
+.reading-chrome-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--reading-muted-strong);
+}
+.reading-chrome-time {
+  font-size: 0.8rem;
+  color: var(--reading-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.reading-main {
+  padding: 5rem 1.25rem 9rem;
+}
+
+/* Floating TOC — visible only when there's room beside the centered column. */
+.reading-toc {
+  display: none;
+}
+@media (min-width: 1280px) {
+  .reading-toc {
+    display: block;
+    position: fixed;
+    top: 5rem;
+    left: max(1.5rem, calc((100vw - 42rem) / 2 - 17rem));
+    width: 15rem;
+    max-height: calc(100vh - 7rem);
+    overflow-y: auto;
+    z-index: 40;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
+}
+.reading-toc-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--reading-muted);
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+.reading-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--reading-rule);
+}
+.reading-toc li[data-depth='3'] {
+  padding-left: 0.85rem;
+}
+.reading-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  margin-left: -1px;
+  border-left: 2px solid transparent;
+  background: none;
+  cursor: pointer;
+  color: var(--reading-muted);
+  font-size: 0.83rem;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+}
+.reading-toc-item:hover {
+  color: var(--reading-text);
+}
+.reading-toc li[data-state='done'] .reading-toc-item {
+  color: var(--reading-muted-strong);
+}
+.reading-toc li[data-state='current'] .reading-toc-item {
+  color: var(--reading-text);
+  border-left-color: var(--reading-accent);
+  font-weight: 600;
+}
+.reading-toc-marker {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--reading-rule);
+  color: var(--reading-bg);
+}
+.reading-toc li[data-state='done'] .reading-toc-marker {
+  background: var(--reading-accent);
+  border-color: var(--reading-accent);
+}
+.reading-toc li[data-state='current'] .reading-toc-marker {
+  border-color: var(--reading-accent);
+}
+.reading-toc-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reading-toc-time {
+  font-size: 0.7rem;
+  color: var(--reading-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.reading-resume {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--reading-accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.15rem 0.15rem 0.15rem 0.35rem;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.reading-resume-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 0.6rem;
+}
+.reading-resume-pct {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+.reading-resume-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+}
+.reading-resume-dismiss:hover {
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   Phase 4 — investment layers: highlights + paragraph reactions.
+   --------------------------------------------------------------------------- */
+
+.reading-highlight {
+  border-radius: 2px;
+  padding: 0.05em 0;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.reading-highlight:hover {
+  filter: brightness(0.95);
+}
+.reading-highlight-yellow {
+  background: rgba(255, 214, 84, 0.45);
+}
+.reading-highlight-green {
+  background: rgba(122, 214, 130, 0.4);
+}
+.reading-highlight-blue {
+  background: rgba(120, 178, 246, 0.4);
+}
+.dark .reading-highlight-yellow {
+  background: rgba(214, 174, 56, 0.32);
+}
+.dark .reading-highlight-green {
+  background: rgba(96, 184, 110, 0.3);
+}
+.dark .reading-highlight-blue {
+  background: rgba(96, 150, 224, 0.32);
+}
+
+/* Floating selection / remove toolbar */
+.reading-hl-pop {
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--reading-text);
+  color: var(--reading-bg);
+  padding: 6px 10px;
+  border-radius: 9px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.reading-hl-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.reading-hl-remove {
+  color: #ff9b9b;
+}
+.reading-hl-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.reading-hl-swatch-yellow {
+  background: #f1c40f;
+}
+.reading-hl-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  padding: 0;
+}
+.reading-hl-swatch-green {
+  background: #5fc46a;
+}
+.reading-hl-swatch-blue {
+  background: #5b9bf0;
+}
+
+/* Paragraph reaction control (hover gutter) */
+.reading-react {
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.reading-react-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--reading-card-border);
+  background: var(--reading-card);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.reading-react-btn:hover {
+  opacity: 1;
+  transform: scale(1.12);
+}
+.reading-react-btn.is-active {
+  opacity: 1;
+  border-color: var(--reading-accent);
+  background: color-mix(in srgb, var(--reading-accent) 16%, var(--reading-card));
+}
+
+/* Persistent reacted indicators in the right gutter (only where there's room). */
+.article > p {
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .article > p[data-react-heart]::after {
+    content: "❤️";
+    position: absolute;
+    right: -1.9rem;
+    top: 0.15rem;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+  .article > p[data-react-idea]::before {
+    content: "💡";
+    position: absolute;
+    right: -1.9rem;
+    top: 1.4rem;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Phase 5 — chrome controls (focus toggle, TTS) + end matter.
+   --------------------------------------------------------------------------- */
+
+.reading-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--reading-muted-strong);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.reading-icon-btn:hover {
+  background: var(--reading-card);
+  color: var(--reading-text);
+}
+.reading-icon-btn.is-active {
+  color: var(--reading-accent);
+  background: color-mix(in srgb, var(--reading-accent) 12%, transparent);
+}
+.reading-tts {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.reading-endmatter {
+  max-width: 42rem;
+  margin: 4rem auto 0;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.reading-endmatter-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--reading-muted);
+  margin-bottom: 1rem;
+}
+
+.reading-finished {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--reading-accent) 10%, var(--reading-card));
+  border: 1px solid var(--reading-card-border);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--reading-text);
+  margin-bottom: 2.5rem;
+}
+.reading-finished-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--reading-accent);
+  color: #fff;
+  font-size: 0.78rem;
+}
+.reading-finished-stats {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--reading-muted);
+  font-size: 0.82rem;
+}
+
+.reading-recap {
+  margin-bottom: 3rem;
+}
+.reading-recap ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.reading-recap li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.reading-recap-dot {
+  flex-shrink: 0;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 3px;
+  margin-top: 0.35rem;
+}
+.reading-recap-text {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--reading-muted-strong);
+  font-style: italic;
+}
+
+.reading-related {
+  margin-bottom: 4rem;
+}
+.reading-related-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .reading-related-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.reading-related-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.7rem;
+  background: var(--reading-card);
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.reading-related-card:hover {
+  border-color: var(--reading-accent);
+  transform: translateY(-2px);
+}
+.reading-related-cardtitle {
+  font-weight: 650;
+  color: var(--reading-text);
+  font-size: 1rem;
+}
+.reading-related-hook {
+  font-size: 0.85rem;
+  color: var(--reading-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.reading-related-time {
+  font-size: 0.75rem;
+  color: var(--reading-accent);
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
