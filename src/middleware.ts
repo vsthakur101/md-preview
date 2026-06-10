@@ -20,5 +20,6 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|signin).*)'],
+  // `share` is excluded so public read-only links work without a session.
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|signin|share).*)'],
 };
