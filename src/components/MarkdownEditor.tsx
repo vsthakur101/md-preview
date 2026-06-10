@@ -144,6 +144,9 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     }
   };
 
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
   const tools: { icon: typeof Bold; label: string; id: ToolId }[] = [
     { icon: Bold, label: 'Bold (Cmd/Ctrl+B)', id: 'bold' },
     { icon: Italic, label: 'Italic (Cmd/Ctrl+I)', id: 'italic' },
@@ -175,12 +178,10 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
             </Button>
           ))}
         </div>
-        <span className="shrink-0 pr-2 text-xs text-muted-foreground tabular-nums">
-          {value.length} chars
-        </span>
       </div>
       <textarea
         ref={textareaRef}
+        id="md-editor-textarea"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -188,6 +189,11 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
         className="scrollbar-thin flex-1 w-full resize-none bg-background p-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none sm:p-4"
         spellCheck={false}
       />
+      <div className="flex shrink-0 items-center justify-end gap-3 border-t px-3 py-1.5 text-xs text-muted-foreground tabular-nums">
+        <span>{wordCount} words</span>
+        <span>{value.length} chars</span>
+        {wordCount > 0 && <span>~{readingMinutes} min read</span>}
+      </div>
     </div>
   );
 }

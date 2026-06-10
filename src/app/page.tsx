@@ -12,6 +12,7 @@ import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { useMounted } from '@/hooks/use-mounted';
+import { useSyncedScroll } from '@/hooks/use-synced-scroll';
 
 const DRAFT_KEY = 'md-preview:draft';
 
@@ -30,6 +31,9 @@ export default function Home() {
   const [markdown, setMarkdown] = useState<string>(readDraft);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const mounted = useMounted();
+
+  // Keep the editor and preview panes scrolled to the same fraction.
+  useSyncedScroll('md-editor-textarea', 'md-preview-scroll', mounted);
 
   // Debounced autosave of the scratch buffer to localStorage.
   useEffect(() => {

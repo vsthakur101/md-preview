@@ -21,7 +21,7 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
           Preview
         </span>
       </div>
-      <div className="flex-1 overflow-auto p-4 sm:p-6 bg-background scrollbar-thin">
+      <div id="md-preview-scroll" className="flex-1 overflow-auto p-4 sm:p-6 bg-background scrollbar-thin">
         <article id="markdown-preview-content" className="prose prose-sm sm:prose-base prose-gray dark:prose-invert max-w-none prose-headings:font-semibold prose-h1:text-2xl sm:prose-h1:text-3xl prose-h2:text-xl sm:prose-h2:text-2xl prose-h3:text-lg sm:prose-h3:text-xl prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}

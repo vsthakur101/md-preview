@@ -3,12 +3,17 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import MarkdownPreview from '@/components/MarkdownPreview';
+import ShareButton from '@/components/ShareButton';
+import ThemeToggle from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
 
 interface MarkdownFile {
   id: string;
   title: string;
   content: string;
+  shareId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,13 +32,9 @@ export default function FileViewPage({ params }: { params: Promise<{ id: string 
       try {
         const response = await fetch(`/api/files/${id}`);
         if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('File not found');
-          }
-          throw new Error('Failed to fetch file');
+          throw new Error(response.status === 404 ? 'File not found' : 'Failed to fetch file');
         }
-        const data = await response.json();
-        setFile(data);
+        setFile(await response.json());
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load file');
@@ -41,21 +42,14 @@ export default function FileViewPage({ params }: { params: Promise<{ id: string 
         setIsLoading(false);
       }
     };
-
     fetchFile();
   }, [id]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/files/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete');
-      }
-
+      const response = await fetch(`/api/files/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete');
       router.push('/library');
     } catch (error) {
       console.error('Delete error:', error);
@@ -65,45 +59,25 @@ export default function FileViewPage({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const handleEdit = () => {
-    router.push(`/library/${id}/edit`);
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
-          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Loading...
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+        <Loader2 className="mr-2 size-5 animate-spin" />
+        Loading…
       </div>
     );
   }
 
   if (error || !file) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center">
-        <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-destructive/10">
+          <AlertTriangle className="size-8 text-destructive" />
         </div>
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          {error || 'File not found'}
-        </h2>
-        <Link
-          href="/library"
-          className="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          Back to Library
-        </Link>
+        <h2 className="mb-2 text-lg font-medium">{error || 'File not found'}</h2>
+        <Button asChild className="mt-4">
+          <Link href="/library">Back to Library</Link>
+        </Button>
       </div>
     );
   }
@@ -117,76 +91,57 @@ export default function FileViewPage({ params }: { params: Promise<{ id: string 
   });
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/library"
-                className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                title="Back to Library"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </Link>
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-30 shrink-0 border-b bg-background/80 backdrop-blur">
+        <div className="mx-auto max-w-5xl px-3 py-3 sm:px-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <Button asChild variant="ghost" size="icon" title="Back to Library">
+                <Link href="/library">
+                  <ArrowLeft className="size-5" />
+                </Link>
+              </Button>
               <div className="min-w-0 flex-1">
-                <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
-                  {file.title}
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Created {formattedDate}
-                </p>
+                <h1 className="truncate text-base font-semibold sm:text-lg">{file.title}</h1>
+                <p className="text-xs text-muted-foreground">Created {formattedDate}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 pl-9 sm:pl-0">
-              <button
-                onClick={handleEdit}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit
-              </button>
+
+            <div className="flex items-center gap-2 pl-11 sm:pl-0">
+              <ShareButton fileId={file.id} initialShareId={file.shareId} />
+              <Button variant="ghost" size="sm" onClick={() => router.push(`/library/${id}/edit`)}>
+                <Pencil className="size-4" />
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
               {showDeleteConfirm ? (
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                  <span className="text-xs text-gray-600 dark:text-gray-400 px-2">Delete?</span>
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="px-3 py-1.5 sm:px-2 sm:py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-50"
-                  >
-                    {isDeleting ? '...' : 'Yes'}
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="px-3 py-1.5 sm:px-2 sm:py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
+                <div className="flex items-center gap-1 rounded-md border bg-muted/50 p-1">
+                  <span className="px-2 text-xs text-muted-foreground">Delete?</span>
+                  <Button size="sm" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="size-3.5 animate-spin" /> : 'Yes'}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
                     No
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete
-                </button>
+                  <Trash2 className="size-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
               )}
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Preview */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-2 sm:p-4">
-        <div className="h-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm overflow-hidden">
+      <main className="mx-auto w-full max-w-5xl flex-1 p-2 sm:p-4">
+        <div className="h-full overflow-hidden rounded-xl border bg-card shadow-sm">
           <MarkdownPreview content={file.content} />
         </div>
       </main>

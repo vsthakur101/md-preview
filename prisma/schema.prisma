@@ -17,6 +17,8 @@ model MarkdownFile {
   preview   String
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Null = private. When set, the file is publicly viewable at /share/{shareId}.
+  shareId   String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
