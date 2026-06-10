@@ -17,8 +17,7 @@ model MarkdownFile {
   preview    String
   userId     String
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Kept so `prisma db push` from this branch doesn't drop the column that the
-  // sharing feature added to the shared DB. Null = private.
+  // Null = private. When set, the file is publicly viewable at /share/{shareId}.
   shareId    String?     @unique
   highlights Highlight[]
   reactions  Reaction[]
