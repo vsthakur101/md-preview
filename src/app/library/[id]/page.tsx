@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import MarkdownPreview from '@/components/MarkdownPreview';
 import ShareButton from '@/components/ShareButton';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -106,8 +106,13 @@ export default function FileViewPage({ params }: { params: Promise<{ id: string 
                 <p className="text-xs text-muted-foreground">Created {formattedDate}</p>
               </div>
             </div>
-
             <div className="flex items-center gap-2 pl-11 sm:pl-0">
+              <Button asChild size="sm">
+                <Link href={`/read/${id}`}>
+                  <BookOpen className="size-4" />
+                  <span className="hidden sm:inline">Read</span>
+                </Link>
+              </Button>
               <ShareButton fileId={file.id} initialShareId={file.shareId} />
               <Button variant="ghost" size="sm" onClick={() => router.push(`/library/${id}/edit`)}>
                 <Pencil className="size-4" />
