@@ -8,7 +8,11 @@ import HighlightLayer, { type InitialHighlight } from '@/components/reading/High
 import ReactionLayer, { type InitialReaction } from '@/components/reading/ReactionLayer';
 import ReadAloud from '@/components/reading/ReadAloud';
 import EndMatter, { type RelatedRead } from '@/components/reading/EndMatter';
+import TextSizeControl from '@/components/reading/TextSizeControl';
+import ShortcutsHelp from '@/components/reading/ShortcutsHelp';
 import { useMounted } from '@/hooks/use-mounted';
+import { useTextSize, textSizePx } from '@/hooks/use-reading-prefs';
+import { getPosition, savePosition } from '@/lib/reading/progress-store';
 import type { ArticleHeading } from '@/lib/reading/markdown';
 
 interface ReaderProps {
@@ -20,18 +24,6 @@ interface ReaderProps {
   initialReactions: InitialReaction[];
   related: RelatedRead[];
   children: React.ReactNode; // server-rendered <article>
-}
-
-const posKey = (id: string) => `reading:pos:${id}`;
-
-function readSavedFraction(id: string): number {
-  if (typeof window === 'undefined') return 0;
-  try {
-    const v = window.localStorage.getItem(posKey(id));
-    return v ? Math.min(1, Math.max(0, parseFloat(v))) : 0;
-  } catch {
-    return 0;
-  }
 }
 
 export default function Reader({
@@ -50,12 +42,14 @@ export default function Reader({
   const [chromeHidden, setChromeHidden] = useState(false);
   const [focus, setFocus] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const textSize = useTextSize();
 
   const focusRef = useRef(false);
   const spotRef = useRef<Element | null>(null);
 
   // Resume: read once on the client; gate display until mounted (no SSR mismatch).
-  const [savedFraction] = useState(() => readSavedFraction(articleId));
+  const [savedFraction] = useState(() => getPosition(articleId));
   const mounted = useMounted();
   const [resumeDismissed, setResumeDismissed] = useState(false);
 
@@ -126,15 +120,9 @@ export default function Reader({
       }
       lastYRef.current = y;
 
-      // Persist resume position (debounced).
+      // Persist resume position + recency (debounced).
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        try {
-          window.localStorage.setItem(posKey(articleId), frac.toFixed(4));
-        } catch {
-          /* ignore */
-        }
-      }, 400);
+      saveTimer.current = setTimeout(() => savePosition(articleId, frac), 400);
     };
 
     const onScroll = () => {
@@ -171,6 +159,54 @@ export default function Reader({
     }
   };
 
+  // Keyboard shortcuts: j/k section nav, f focus, t TOC, ? help, Esc closes.
+  useEffect(() => {
+    const jumpSection = (delta: 1 | -1) => {
+      const next = Math.min(headings.length - 1, Math.max(0, activeRef.current + delta));
+      if (next === activeRef.current && delta === -1) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      const id = headings[next]?.id;
+      if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+
+      switch (e.key) {
+        case 'j':
+          jumpSection(1);
+          break;
+        case 'k':
+          jumpSection(-1);
+          break;
+        case 'f':
+          toggleFocus();
+          break;
+        case 't':
+          if (headings.length > 1) setTocOpen((v) => !v);
+          break;
+        case '?':
+          setHelpOpen((v) => !v);
+          break;
+        case 'Escape':
+          if (helpOpen) setHelpOpen(false);
+          else if (tocOpen) setTocOpen(false);
+          else if (focusRef.current) toggleFocus();
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
+
   const showResume = mounted && !resumeDismissed && savedFraction > 0.03 && savedFraction < 0.97;
 
   // Shared by the desktop rail and the mobile drawer.
@@ -204,7 +240,11 @@ export default function Reader({
   );
 
   return (
-    <div className="reader-root" data-focus={focus ? 'on' : 'off'}>
+    <div
+      className="reader-root"
+      data-focus={focus ? 'on' : 'off'}
+      style={{ '--reading-size': `${textSizePx(textSize)}px` } as React.CSSProperties}
+    >
       {/* Scroll progress bar */}
       <div className="reading-progress-track">
         <div ref={fillRef} className="reading-progress-fill" />
@@ -227,7 +267,7 @@ export default function Reader({
             className="reading-icon-btn reading-toc-toggle"
             onClick={() => setTocOpen(true)}
             aria-label="Table of contents"
-            title="Contents"
+            title="Contents (t)"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 6h16M4 12h16M4 18h10" strokeLinecap="round" />
@@ -239,11 +279,12 @@ export default function Reader({
           <span ref={timeRef}>{minutes} min left</span>
         </span>
         <ReadAloud />
+        <TextSizeControl />
         <button
           className={`reading-icon-btn${focus ? ' is-active' : ''}`}
           onClick={toggleFocus}
           aria-label="Toggle focus mode"
-          title="Focus mode"
+          title="Focus mode (f)"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="3" />
@@ -304,6 +345,8 @@ export default function Reader({
       {/* Investment layers (Phase 4) */}
       <HighlightLayer articleId={articleId} initial={initialHighlights} />
       <ReactionLayer articleId={articleId} initial={initialReactions} />
+
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {/* Auto-resume */}
       <AnimatePresence>

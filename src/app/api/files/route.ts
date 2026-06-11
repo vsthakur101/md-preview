@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
-import { fileInputSchema, buildPreview } from '@/lib/validation';
+import { fileInputSchema, buildPreview, estimateReadMinutes } from '@/lib/validation';
 import { enforceWriteLimit } from '@/lib/ratelimit';
 
 // GET all files belonging to the signed-in user
@@ -21,10 +21,17 @@ export async function GET() {
         title: true,
         preview: true,
         createdAt: true,
+        content: true,
       },
     });
 
-    return NextResponse.json(files);
+    // Derive read time server-side; the content itself stays out of the payload.
+    return NextResponse.json(
+      files.map(({ content, ...file }) => ({
+        ...file,
+        minutes: estimateReadMinutes(content),
+      }))
+    );
   } catch (error) {
     console.error('Failed to fetch files:', error);
     return NextResponse.json(

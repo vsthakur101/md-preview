@@ -1,0 +1,58 @@
+'use client';
+
+import { useSyncExternalStore } from 'react';
+
+/**
+ * Reader text-size preference backed by localStorage, exposed through
+ * useSyncExternalStore so SSR renders the default and the client corrects
+ * itself after hydration — no setState-in-effect, no hydration mismatch.
+ *
+ * Only the font size scales; the measure cap (42rem) is fixed by design.
+ */
+
+const KEY = 'reading:prefs:size';
+
+export const TEXT_SIZES = [
+  { id: 'small', label: 'Small', px: 18 },
+  { id: 'medium', label: 'Medium', px: 20 },
+  { id: 'large', label: 'Large', px: 22 },
+] as const;
+
+export type TextSizeId = (typeof TEXT_SIZES)[number]['id'];
+
+const DEFAULT_SIZE: TextSizeId = 'medium';
+
+const listeners = new Set<() => void>();
+
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+function getSnapshot(): TextSizeId {
+  try {
+    const v = window.localStorage.getItem(KEY);
+    return TEXT_SIZES.some((s) => s.id === v) ? (v as TextSizeId) : DEFAULT_SIZE;
+  } catch {
+    return DEFAULT_SIZE;
+  }
+}
+
+export function setTextSize(size: TextSizeId): void {
+  try {
+    window.localStorage.setItem(KEY, size);
+  } catch {
+    /* ignore */
+  }
+  listeners.forEach((cb) => cb());
+}
+
+export function useTextSize(): TextSizeId {
+  return useSyncExternalStore(subscribe, getSnapshot, () => DEFAULT_SIZE);
+}
+
+export function textSizePx(size: TextSizeId): number {
+  return TEXT_SIZES.find((s) => s.id === size)?.px ?? 20;
+}
