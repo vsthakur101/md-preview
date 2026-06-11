@@ -17,21 +17,22 @@ interface FileCardProps {
 
 /*
  * Category accent, derived from the title. The 3px strip + tinted icon is what
- * keeps a grid of cards from reading as identical grey boxes.
+ * keeps a grid of cards from reading as identical grey boxes. Colors come from
+ * the --cat-* design tokens in globals.css — no raw hex here.
  */
 const CATEGORIES: { color: string; test: RegExp }[] = [
-  { color: '#e0a458', test: /faang|interview|system design|leetcode|dsa|behavioral|resume/i },
-  { color: '#7fb069', test: /fitness|workout|gym|health|diet|nutrition|running|sleep/i },
-  { color: '#b497e7', test: /\bai\b|llm|gpt|claude|machine learning|\bml\b|prompt|agent|rag\b/i },
-  { color: '#d96a5f', test: /cyber|security|hack|pentest|vulnerab|exploit|threat/i },
-  { color: '#74a4d9', test: /next\.?js|react|typescript|javascript|node|css|frontend|backend|\bapi\b|\bdev\b/i },
+  { color: 'var(--cat-interview)', test: /faang|interview|system design|leetcode|dsa|behavioral|resume/i },
+  { color: 'var(--cat-fitness)', test: /fitness|workout|gym|health|diet|nutrition|running|sleep/i },
+  { color: 'var(--cat-ai)', test: /\bai\b|llm|gpt|claude|machine learning|\bml\b|prompt|agent|rag\b/i },
+  { color: 'var(--cat-security)', test: /cyber|security|hack|pentest|vulnerab|exploit|threat/i },
+  { color: 'var(--cat-dev)', test: /next\.?js|react|typescript|javascript|node|css|frontend|backend|\bapi\b|\bdev\b/i },
 ];
 
 function categoryColor(title: string): string {
   for (const c of CATEGORIES) {
     if (c.test.test(title)) return c.color;
   }
-  return '#9a968a'; // neutral for uncategorized
+  return 'var(--cat-neutral)';
 }
 
 export default function FileCard({ id, title, preview, createdAt, onDelete }: FileCardProps) {
@@ -81,7 +82,7 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate font-medium text-foreground">{title}</h3>
-            <p className="mt-0.5 text-sm text-muted-foreground">{formattedDate}</p>
+            <p className="mt-0.5 text-meta text-muted-foreground">{formattedDate}</p>
           </div>
         </div>
         <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">

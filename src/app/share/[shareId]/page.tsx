@@ -33,12 +33,12 @@ export default async function SharePage({
       <header className="sticky top-0 z-30 shrink-0 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-purple-600 text-white">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <FileText className="size-5" />
             </div>
             <div className="min-w-0">
               <h1 className="truncate text-base font-semibold sm:text-lg">{file.title}</h1>
-              <p className="text-xs text-muted-foreground">Shared · updated {updated}</p>
+              <p className="text-meta text-muted-foreground">Shared · updated {updated}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

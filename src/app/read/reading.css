@@ -3,18 +3,23 @@
    Scoped to .reader-root so it never touches the rest of the app.
    --------------------------------------------------------------------------- */
 
+/*
+ * All reader colors derive from the global design tokens (globals.css), so the
+ * theme toggle reskins the reader through the same single switch as the rest
+ * of the app. The --reading-* aliases are kept as the local vocabulary.
+ */
 .reader-root {
-  --reading-bg: #fafaf8;
-  --reading-text: #1f1d1a;
-  --reading-muted: #6f6a62;
-  --reading-muted-strong: #4a463f;
-  --reading-accent: #a8551e;
-  --reading-accent-strong: #8a4417;
-  --reading-rule: #e3ded5;
-  --reading-card: #f3f0ea;
-  --reading-card-border: #e6e1d8;
-  --reading-inline-code: #ece8e0;
-  --reading-code-bg: #f5f2ec;
+  --reading-bg: var(--bg-base);
+  --reading-text: var(--text-primary);
+  --reading-muted: var(--text-muted);
+  --reading-muted-strong: var(--text-secondary);
+  --reading-accent: var(--brand);
+  --reading-accent-strong: var(--brand-hover);
+  --reading-rule: var(--border-subtle);
+  --reading-card: var(--bg-raised);
+  --reading-card-border: var(--border-subtle);
+  --reading-inline-code: var(--bg-raised-2);
+  --reading-code-bg: var(--bg-inset);
 
   /* Faint radial behind the content so the dark space reads as intentional. */
   background:
@@ -24,30 +29,17 @@
   min-height: 100vh;
 }
 
-/* Dark values track the global warm scale (see globals.css palette table). */
-.dark .reader-root {
-  --reading-bg: #14130f;
-  --reading-text: #edeae0;
-  --reading-muted: #9a968a;
-  --reading-muted-strong: #c1bcaf;
-  --reading-accent: #e0a458;
-  --reading-accent-strong: #ecbe83;
-  --reading-rule: #2e2c24;
-  --reading-card: #1c1b16;
-  --reading-card-border: #2e2c24;
-  --reading-inline-code: #252319;
-  --reading-code-bg: #191812;
-}
-
 .reader-root ::selection {
-  background: color-mix(in srgb, var(--reading-accent) 25%, transparent);
+  background: var(--accent-muted);
 }
 
-/* ---- The article: measure-capped, serif, generous rhythm ---------------- */
+/* ---- The article: measure-capped, serif, generous rhythm ----------------
+   Type ramp (20px base): body 20/1.7, lead 22/1.6, H1 40/1.15, H2 28/1.25,
+   H3 22/1.35. Body = Newsreader; headings/quotes = Fraunces (Display). */
 .article {
   font-family: var(--font-serif), Georgia, "Times New Roman", serif;
-  font-size: 1.27rem; /* ~20px */
-  line-height: 1.75;
+  font-size: 1.25rem; /* 20px */
+  line-height: 1.7;
   color: var(--reading-text);
   /* The single highest-impact rule: cap the measure. */
   max-width: 42rem; /* ~672px, ~66ch */
@@ -57,28 +49,41 @@
 }
 
 .article p {
-  margin: 0 0 1.5rem;
+  margin: 0 0 2rem; /* 32px block rhythm */
+  text-wrap: pretty;
 }
 
 .article > p:first-of-type {
   margin-top: 0;
+  /* Lead paragraph: one ramp step above body. */
+  font-size: 1.375rem;
+  line-height: 1.6;
 }
 
-/* Headings (serif, content voice) */
+/* Headings (Display serif — never the UI sans) */
+.article h1,
 .article h2,
 .article h3,
 .article h4 {
-  font-family: var(--font-serif), Georgia, serif;
+  font-family: var(--font-fraunces), var(--font-serif), Georgia, serif;
   font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  text-wrap: balance;
   scroll-margin-top: 5rem; /* so anchor jumps clear the top chrome */
 }
 
+.article h1 {
+  font-size: 2.5rem; /* 40px */
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.5rem;
+}
+
 .article h2 {
-  font-size: 1.95rem;
-  margin: 3.75rem 0 1.25rem;
-  padding-top: 2.5rem;
+  font-size: 1.75rem; /* 28px */
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin: 3rem 0 1rem; /* 48px before a section */
+  padding-top: 1.5rem; /* room for the ornament */
   position: relative;
 }
 
@@ -96,15 +101,17 @@
 }
 
 .article h3 {
-  font-size: 1.4rem;
-  margin: 2.5rem 0 1rem;
+  font-size: 1.375rem; /* 22px */
+  line-height: 1.35;
+  letter-spacing: 0;
+  margin: 2rem 0 1rem;
 }
 
-/* Drop caps on the lead paragraph and each section opener. */
+/* Drop caps on the lead paragraph and each section opener (Display face). */
 .article > p:first-of-type::first-letter,
 .article h2 + p::first-letter {
   float: left;
-  font-family: var(--font-serif), Georgia, serif;
+  font-family: var(--font-fraunces), var(--font-serif), Georgia, serif;
   font-size: 3.4em;
   line-height: 0.78;
   font-weight: 600;
@@ -125,7 +132,7 @@
 
 .article ul,
 .article ol {
-  margin: 0 0 1.5rem;
+  margin: 0 0 2rem;
   padding-left: 1.4rem;
 }
 .article li {
@@ -151,25 +158,29 @@
   font-weight: 650;
 }
 
-/* ---- Pull-quotes — large serif rest-stops ------------------------------- */
+/* ---- Pull-quotes — large Display-serif rest-stops ----------------------- */
 .article .pullquote {
   margin: 2.75rem 0;
   padding: 0 0 0 1.5rem;
   border-left: 3px solid var(--reading-accent);
-  font-size: 1.6rem;
-  line-height: 1.4;
+  font-family: var(--font-fraunces), var(--font-serif), Georgia, serif;
+  font-size: 1.5rem; /* 24px */
+  line-height: 1.5;
   font-style: italic;
   color: var(--reading-accent-strong);
 }
 .article .pullquote p {
   margin: 0;
+  font-size: inherit;
+  line-height: inherit;
 }
 
-/* Ordinary (longer) blockquotes */
+/* Ordinary (longer) blockquotes — Display italic at body size */
 .article blockquote:not(.pullquote) {
   margin: 1.75rem 0;
   padding-left: 1.25rem;
   border-left: 3px solid var(--reading-rule);
+  font-family: var(--font-fraunces), var(--font-serif), Georgia, serif;
   color: var(--reading-muted-strong);
   font-style: italic;
 }
@@ -237,7 +248,7 @@
 
 /* ---- Code ---------------------------------------------------------------- */
 .article :not(pre) > code {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: 0.86em;
   background: var(--reading-inline-code);
   padding: 0.12em 0.36em;
@@ -250,11 +261,11 @@
   padding: 1.1rem 1.25rem;
   overflow-x: auto;
   margin: 2rem 0;
-  font-size: 0.95rem;
+  font-size: 0.875rem; /* 14px code ramp */
   line-height: 1.6;
 }
 .article pre code {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   background: none;
   padding: 0;
 }
@@ -420,7 +431,7 @@
 .reading-toc-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--scrim);
   border: none;
   padding: 0;
   cursor: pointer;
@@ -528,7 +539,7 @@
   align-items: center;
   gap: 0.25rem;
   background: var(--reading-accent);
-  color: #fff;
+  color: var(--brand-foreground);
   border-radius: 999px;
   padding: 0.15rem 0.15rem 0.15rem 0.35rem;
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
@@ -539,7 +550,7 @@
   align-items: center;
   gap: 0.5rem;
   background: none;
-  color: #fff;
+  color: var(--brand-foreground);
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
@@ -547,7 +558,7 @@
   padding: 0.5rem 0.6rem;
 }
 .reading-resume-pct {
-  background: rgba(255, 255, 255, 0.22);
+  background: color-mix(in srgb, var(--brand-foreground) 22%, transparent);
   border-radius: 999px;
   padding: 0.1rem 0.5rem;
   font-size: 0.72rem;
@@ -556,13 +567,13 @@
 .reading-resume-dismiss {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: color-mix(in srgb, var(--brand-foreground) 80%, transparent);
   cursor: pointer;
   padding: 0.5rem 0.7rem;
   font-size: 0.8rem;
 }
 .reading-resume-dismiss:hover {
-  color: #fff;
+  color: var(--brand-foreground);
 }
 
 /* ---------------------------------------------------------------------------
@@ -622,7 +633,7 @@
   font-weight: 600;
 }
 .reading-hl-remove {
-  color: #ff9b9b;
+  color: color-mix(in srgb, var(--cat-security) 75%, var(--reading-bg));
 }
 .reading-hl-swatch {
   width: 12px;
@@ -637,7 +648,8 @@
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  /* the popover bg is inverted (--reading-text), so the ring uses --reading-bg */
+  border: 1.5px solid color-mix(in srgb, var(--reading-bg) 30%, transparent);
   cursor: pointer;
   padding: 0;
 }
@@ -770,7 +782,7 @@
   height: 1.3rem;
   border-radius: 50%;
   background: var(--reading-accent);
-  color: #fff;
+  color: var(--brand-foreground);
   font-size: 0.78rem;
 }
 .reading-finished-stats {

@@ -76,8 +76,8 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path
@@ -94,11 +94,11 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
 
   if (error && !isSaving && !title && !content) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{error}</h2>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <h2 className="text-lg font-medium text-foreground mb-2">{error}</h2>
         <Link
           href="/library"
-          className="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          className="mt-4 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-brand-hover rounded-lg transition-colors"
         >
           Back to Library
         </Link>
@@ -107,14 +107,14 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+      <header className="shrink-0 border-b bg-card">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href={`/library/${id}`}
-              className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
               title="Cancel"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,27 +126,27 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Untitled"
-              className="flex-1 min-w-0 px-3 py-1.5 text-base sm:text-lg font-semibold bg-transparent text-gray-900 dark:text-white border border-transparent hover:border-gray-200 dark:hover:border-gray-800 focus:border-blue-500 rounded-lg focus:outline-none"
+              className="flex-1 min-w-0 px-3 py-1.5 text-base sm:text-lg font-semibold bg-transparent text-foreground border border-transparent hover:border-border focus:border-ring rounded-lg focus:outline-none"
             />
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-brand-hover rounded-lg transition-colors disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
-          {error && <p className="mt-2 text-sm text-red-500 pl-11">{error}</p>}
+          {error && <p className="mt-2 text-sm text-destructive pl-11">{error}</p>}
         </div>
       </header>
 
       {/* Split editor / preview */}
       <main className="flex-1 flex overflow-hidden">
         <div className="max-w-7xl w-full mx-auto p-2 sm:p-4 flex flex-col lg:flex-row gap-2 sm:gap-4">
-          <div className="flex-1 min-h-[40vh] lg:min-h-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm overflow-hidden">
+          <div className="flex-1 min-h-[40vh] lg:min-h-0 rounded-xl border bg-card shadow-sm overflow-hidden">
             <MarkdownEditor value={content} onChange={setContent} />
           </div>
-          <div className="flex-1 min-h-[40vh] lg:min-h-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm overflow-hidden">
+          <div className="flex-1 min-h-[40vh] lg:min-h-0 rounded-xl border bg-card shadow-sm overflow-hidden">
             <MarkdownPreview content={content} />
           </div>
         </div>

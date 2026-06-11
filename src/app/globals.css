@@ -18,17 +18,32 @@
  * Light = warm paper, Dark = warm near-black. See the UI brief palette table.
  */
 :root {
-  --radius: 0.625rem;
+  /* rounded-sm = 8px (inputs/chips), rounded-lg = 12px (cards), rounded-xl = 16px */
+  --radius: 0.75rem;
 
   /* Warm paper scale */
-  --bg-base: #fafaf8;
-  --bg-raised: #fefdfb;
-  --bg-raised-2: #f3f0ea;
-  --border-subtle: #e7e3d8;
-  --text-primary: #2a2823;
-  --text-muted: #6b665c;
-  --brand: #b5731e; /* amber, darkened for contrast on paper */
-  --brand-foreground: #fdfcf9;
+  --bg-base: #faf8f2;
+  --bg-raised: #fffefb; /* near-white with warmth — never pure #FFF */
+  --bg-raised-2: #f2efe6;
+  --bg-inset: #f4f1e8; /* code blocks, recessed wells */
+  --border-subtle: #e4dfd2;
+  --border-strong: #d3cdbc;
+  --text-primary: #2a2620;
+  --text-secondary: #5c5749;
+  --text-muted: #7a7568;
+  --brand: #b87a2e; /* amber, darkened for contrast on paper */
+  --brand-hover: #a26823;
+  --accent-muted: #f1e6d0; /* selection, active-row backgrounds */
+  --brand-foreground: #fdfcf7;
+  --scrim: rgb(42 38 32 / 0.4);
+
+  /* Category accent scale (library cards): 3px edge strip + icon tint only. */
+  --cat-interview: #e0a458;
+  --cat-ai: #a98be0;
+  --cat-fitness: #7fb069;
+  --cat-security: #d9685e;
+  --cat-dev: #5e9bd9;
+  --cat-neutral: var(--text-muted);
 
   --background: var(--bg-base);
   --foreground: var(--text-primary);
@@ -51,15 +66,21 @@
 }
 
 .dark {
-  /* Warm near-black scale */
+  /* Warm near-black scale — a reading lamp in a dark room, never cold #000 */
   --bg-base: #14130f;
   --bg-raised: #1c1b16;
   --bg-raised-2: #252319;
+  --bg-inset: #100f0c;
   --border-subtle: #2e2c24;
+  --border-strong: #3d3a2f;
   --text-primary: #edeae0;
-  --text-muted: #9a968a;
+  --text-secondary: #c4bfb1;
+  --text-muted: #928d7e;
   --brand: #e0a458;
+  --brand-hover: #eab46e;
+  --accent-muted: #3a2f1e;
   --brand-foreground: #1a1813;
+  --scrim: rgb(16 15 12 / 0.55);
 
   --background: var(--bg-base);
   --foreground: var(--text-primary);
@@ -101,22 +122,36 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
   --color-brand-foreground: var(--brand-foreground);
+  --color-accent-muted: var(--accent-muted);
   --color-bg-raised: var(--bg-raised);
   --color-bg-raised-2: var(--bg-raised-2);
+  --color-bg-inset: var(--bg-inset);
   --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-scrim: var(--scrim);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-serif);
+  /* Metadata / date ramp step (13px) — between text-xs and text-sm */
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.4;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--accent-muted);
 }
 
 /*
@@ -155,12 +190,8 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;
+  background-color: var(--border-strong);
   border-radius: 3px;
-}
-
-.dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #374151;
 }
 
 /* Prose customizations */

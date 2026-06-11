@@ -85,7 +85,7 @@ export default function SaveButton({ content, onSaved }: SaveButtonProps) {
       onClick={handleSave}
       disabled={isLoading || !content.trim()}
       variant={showSuccess ? 'default' : 'default'}
-      className={showSuccess ? 'bg-green-600 hover:bg-green-600 text-white' : ''}
+      className={showSuccess ? 'bg-(--cat-fitness) hover:bg-(--cat-fitness) text-primary-foreground' : ''}
     >
       {showSuccess ? (
         <>

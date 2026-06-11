@@ -189,7 +189,7 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
         className="scrollbar-thin flex-1 w-full resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none sm:p-4"
         spellCheck={false}
       />
-      <div className="flex shrink-0 items-center justify-end gap-3 border-t px-3 py-1.5 text-xs text-muted-foreground tabular-nums">
+      <div className="flex shrink-0 items-center justify-end gap-3 border-t px-3 py-1.5 font-mono text-xs text-muted-foreground tabular-nums">
         <span>{wordCount} words</span>
         <span>{value.length} chars</span>
         {wordCount > 0 && <span>~{readingMinutes} min read</span>}

@@ -59,7 +59,7 @@ export default function CommandPalette() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[15vh] backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-scrim px-4 pt-[15vh] backdrop-blur-sm"
       onClick={() => setOpen(false)}
     >
       <Command
