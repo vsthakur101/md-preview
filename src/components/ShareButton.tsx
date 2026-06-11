@@ -79,7 +79,7 @@ export default function ShareButton({ fileId, initialShareId }: ShareButtonProps
           {shareId ? (
             <>
               <p className="mb-2 flex items-center gap-1.5 text-sm font-medium">
-                <Globe className="size-4 text-green-600" /> Public link
+                <Globe className="size-4 text-(--cat-fitness)" /> Public link
               </p>
               <div className="flex items-center gap-1.5">
                 <Input

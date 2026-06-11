@@ -15,10 +15,10 @@ function SignInCard() {
   };
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm p-8">
+    <div className="w-full max-w-sm rounded-2xl border bg-card text-card-foreground shadow-sm p-8">
       <div className="flex flex-col items-center text-center">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4">
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center mb-4">
+          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -27,10 +27,10 @@ function SignInCard() {
             />
           </svg>
         </div>
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-foreground">
           Markdown Preview
         </h1>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-2 text-sm text-muted-foreground">
           Sign in to access your private library.
         </p>
       </div>
@@ -38,7 +38,7 @@ function SignInCard() {
       <button
         onClick={handleSignIn}
         disabled={isLoading}
-        className="mt-8 w-full flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-8 w-full flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground bg-card border border-border-strong rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@ function SignInCard() {
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-warm-radial px-4">
       <Suspense fallback={null}>
         <SignInCard />
       </Suspense>

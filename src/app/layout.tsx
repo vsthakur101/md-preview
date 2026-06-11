@@ -1,18 +1,33 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { Fraunces, Geist, JetBrains_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import ThemeProvider from "@/components/ThemeProvider";
 import CommandPalette from "@/components/CommandPalette";
 
+/*
+ * Type roles (see theme spec): Display = Fraunces (headings, titles),
+ * Body = Newsreader (article prose), UI = Geist (chrome), Mono = JetBrains.
+ * The serif/sans contrast between content and chrome IS the personality.
+ */
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// High-contrast display serif with optical sizing for headings.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  display: "swap",
+  style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
 // Humanist serif for long-form reading body text.
@@ -36,7 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased`}
+        className={`${geistSans.variable} ${jetbrainsMono.variable} ${fraunces.variable} ${newsreader.variable} antialiased`}
       >
         <ThemeProvider>
           <SessionProviderWrapper>{children}</SessionProviderWrapper>

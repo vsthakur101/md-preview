@@ -25,7 +25,7 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
         {/* Same voice as the reading view: serif body, measure capped at ~42rem. */}
         <article
           id="markdown-preview-content"
-          className="prose prose-sm sm:prose-base dark:prose-invert mx-auto max-w-2xl prose-headings:font-semibold prose-h1:text-2xl sm:prose-h1:text-3xl prose-h2:text-xl sm:prose-h2:text-2xl prose-h3:text-lg sm:prose-h3:text-xl prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none"
+          className="prose prose-sm sm:prose-base dark:prose-invert mx-auto max-w-2xl prose-headings:font-display prose-headings:font-semibold prose-h1:text-2xl sm:prose-h1:text-3xl prose-h2:text-xl sm:prose-h2:text-2xl prose-h3:text-lg sm:prose-h3:text-xl prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none"
           style={{ fontFamily: 'var(--font-serif), Georgia, serif' }}
         >
           <ReactMarkdown
