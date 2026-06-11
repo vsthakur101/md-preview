@@ -38,7 +38,8 @@
    H3 22/1.35. Body = Newsreader; headings/quotes = Fraunces (Display). */
 .article {
   font-family: var(--font-serif), Georgia, "Times New Roman", serif;
-  font-size: 1.25rem; /* 20px */
+  /* 20px default; user-adjustable (18/20/22) via the Aa control on .reader-root */
+  font-size: var(--reading-size, 1.25rem);
   line-height: 1.7;
   color: var(--reading-text);
   /* The single highest-impact rule: cap the measure. */
@@ -55,8 +56,8 @@
 
 .article > p:first-of-type {
   margin-top: 0;
-  /* Lead paragraph: one ramp step above body. */
-  font-size: 1.375rem;
+  /* Lead paragraph: one ramp step above body (em so it tracks the size pref). */
+  font-size: 1.1em;
   line-height: 1.6;
 }
 
@@ -744,6 +745,124 @@
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+/* ---- Text-size (Aa) popover ---------------------------------------------- */
+.reading-textsize {
+  position: relative;
+  display: flex;
+}
+.reading-textsize-glyph {
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.reading-textsize-pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 75;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem;
+  background: var(--reading-card);
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.7rem;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
+}
+.reading-textsize-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--reading-muted-strong);
+  text-align: left;
+}
+.reading-textsize-opt:hover {
+  background: var(--reading-inline-code);
+  color: var(--reading-text);
+}
+.reading-textsize-opt.is-active {
+  color: var(--reading-accent);
+  background: color-mix(in srgb, var(--reading-accent) 10%, transparent);
+  font-weight: 650;
+}
+.reading-textsize-sample {
+  width: 1.3rem;
+  text-align: center;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 600;
+  line-height: 1;
+}
+.reading-textsize-px {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--reading-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Keyboard shortcuts overlay ------------------------------------------ */
+.reading-shortcuts {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.reading-shortcuts-panel {
+  position: relative;
+  width: min(20rem, calc(100vw - 2.5rem));
+  background: var(--reading-card);
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.9rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  padding: 1.25rem 1.4rem;
+}
+.reading-shortcuts-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.reading-shortcuts-panel li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.reading-shortcuts-action {
+  font-size: 0.85rem;
+  color: var(--reading-muted-strong);
+}
+.reading-shortcuts-keys {
+  display: flex;
+  gap: 0.3rem;
+}
+.reading-shortcuts-panel kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 0.35rem;
+  background: var(--reading-inline-code);
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--reading-text);
 }
 
 .reading-endmatter {

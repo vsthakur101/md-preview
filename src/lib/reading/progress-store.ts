@@ -5,6 +5,9 @@
  */
 
 const KEY = 'reading:stats:v1';
+const RECENT_KEY = 'reading:recent:v1';
+const POS_PREFIX = 'reading:pos:';
+const RECENT_MAX = 20;
 
 export interface ReadingStats {
   finishedIds: string[];
@@ -56,4 +59,68 @@ export function markFinished(fileId: string): { count: number; streak: number } 
     /* ignore */
   }
   return { count: s.finishedIds.length, streak: s.streak };
+}
+
+export function isFinished(fileId: string): boolean {
+  return read().finishedIds.includes(fileId);
+}
+
+/* ---- Scroll position + recency (powers resume and "Jump back in") ------- */
+
+export function getPosition(fileId: string): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const v = window.localStorage.getItem(POS_PREFIX + fileId);
+    return v ? Math.min(1, Math.max(0, parseFloat(v))) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function readRecency(): Record<string, number> {
+  try {
+    const raw = window.localStorage.getItem(RECENT_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Persist scroll fraction and bump the article in the recency map. */
+export function savePosition(fileId: string, fraction: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(POS_PREFIX + fileId, fraction.toFixed(4));
+
+    const recent = readRecency();
+    recent[fileId] = Date.now();
+    const trimmed = Object.fromEntries(
+      Object.entries(recent)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, RECENT_MAX)
+    );
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(trimmed));
+  } catch {
+    /* ignore */
+  }
+}
+
+export interface InProgressRead {
+  id: string;
+  fraction: number; // 0..1 scroll progress
+  at: number; // last-read timestamp (ms)
+}
+
+/**
+ * Articles with meaningful unfinished progress, most recently read first.
+ * Drives the library's "Jump back in" surface.
+ */
+export function getInProgressReads(): InProgressRead[] {
+  if (typeof window === 'undefined') return [];
+  const finished = new Set(read().finishedIds);
+  return Object.entries(readRecency())
+    .map(([id, at]) => ({ id, at, fraction: getPosition(id) }))
+    .filter((r) => !finished.has(r.id) && r.fraction > 0.03 && r.fraction < 0.97)
+    .sort((a, b) => b.at - a.at);
 }

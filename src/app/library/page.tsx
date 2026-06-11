@@ -2,24 +2,34 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen } from 'lucide-react';
 import FileCard from '@/components/FileCard';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { getInProgressReads, getStats, isFinished } from '@/lib/reading/progress-store';
 
 interface MarkdownFile {
   id: string;
   title: string;
   preview: string;
   createdAt: string;
+  minutes?: number;
+}
+
+interface ReadingState {
+  progress: Record<string, number>;
+  finished: Record<string, boolean>;
+  resumeId: string | null;
+  streak: number;
 }
 
 type SortKey = 'newest' | 'oldest' | 'title';
 
 export default function LibraryPage() {
   const [files, setFiles] = useState<MarkdownFile[]>([]);
+  const [reading, setReading] = useState<ReadingState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -35,7 +45,19 @@ export default function LibraryPage() {
     try {
       const response = await fetch('/api/files');
       if (!response.ok) throw new Error('Failed to fetch files');
-      setFiles(await response.json());
+      const data: MarkdownFile[] = await response.json();
+      setFiles(data);
+
+      // Reading state lives in localStorage; snapshot it alongside the fetch
+      // (post-mount, so there's no SSR/hydration concern).
+      const inProgress = getInProgressReads();
+      const ids = new Set(data.map((f) => f.id));
+      setReading({
+        progress: Object.fromEntries(inProgress.map((r) => [r.id, r.fraction])),
+        finished: Object.fromEntries(data.map((f) => [f.id, isFinished(f.id)])),
+        resumeId: inProgress.find((r) => ids.has(r.id))?.id ?? null,
+        streak: getStats().streak,
+      });
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Failed to load files. Please try again.');
@@ -91,6 +113,15 @@ export default function LibraryPage() {
       </header>
 
       <main className="mx-auto max-w-275 px-3 py-4 sm:px-4 sm:py-8">
+        {/* Jump back in — the zero-friction return path to the last unfinished read */}
+        {reading?.resumeId && (
+          <ContinueReadingBanner
+            file={files.find((f) => f.id === reading.resumeId)!}
+            progress={reading.progress[reading.resumeId] ?? 0}
+            streak={reading.streak}
+          />
+        )}
+
         {/* Toolbar — shares the card surface system so it doesn't float on the canvas */}
         <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-xs">
@@ -151,6 +182,9 @@ export default function LibraryPage() {
                 title={file.title}
                 preview={file.preview}
                 createdAt={file.createdAt}
+                minutes={file.minutes}
+                progress={reading?.progress[file.id] ?? 0}
+                finished={reading?.finished[file.id] ?? false}
                 onDelete={handleDelete}
               />
             ))}
@@ -158,6 +192,49 @@ export default function LibraryPage() {
         )}
       </main>
     </div>
+  );
+}
+
+function ContinueReadingBanner({
+  file,
+  progress,
+  streak,
+}: {
+  file: MarkdownFile;
+  progress: number;
+  streak: number;
+}) {
+  const pct = Math.round(progress * 100);
+  const minutesLeft = file.minutes ? Math.max(1, Math.ceil(file.minutes * (1 - progress))) : null;
+
+  return (
+    <Link
+      href={`/read/${file.id}`}
+      className="group mb-6 flex items-center gap-4 overflow-hidden rounded-xl border bg-card p-4 transition-colors hover:border-primary/60 sm:p-5"
+    >
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+        <BookOpen className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-meta font-semibold uppercase tracking-wide text-primary">
+          Jump back in
+          {streak > 1 && <span className="ml-2 normal-case text-muted-foreground">🔥 {streak}-day streak</span>}
+        </p>
+        <p className="truncate font-medium text-foreground">{file.title}</p>
+        <div className="mt-2 flex items-center gap-3">
+          <div className="h-1 max-w-56 flex-1 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="whitespace-nowrap text-meta tabular-nums text-muted-foreground">
+            {pct}%{minutesLeft ? ` · ${minutesLeft} min left` : ''}
+          </span>
+        </div>
+      </div>
+      <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-primary sm:flex">
+        Continue
+        <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+      </span>
+    </Link>
   );
 }
 

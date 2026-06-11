@@ -35,3 +35,12 @@ export function buildPreview(content: string): string {
 
   return stripped + (content.length > 150 ? '...' : '');
 }
+
+/**
+ * Word-count read-time estimate at 230 wpm — the same rate the reader's
+ * "time left" countdown uses, so the library card and the reader agree.
+ */
+export function estimateReadMinutes(content: string): number {
+  const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+  return Math.max(1, Math.round(words / 230));
+}

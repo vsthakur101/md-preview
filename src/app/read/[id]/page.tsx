@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { renderArticle } from '@/lib/reading/markdown';
+import { estimateReadMinutes } from '@/lib/validation';
 import Reader from '@/components/reading/Reader';
 
 export const dynamic = 'force-dynamic';
@@ -39,14 +40,11 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
     }),
   ]);
 
-  const estimateMinutes = (content: string) =>
-    Math.max(1, Math.round((content.trim() ? content.trim().split(/\s+/).length : 0) / 230));
-
   const related = relatedFiles.map((f) => ({
     id: f.id,
     title: f.title,
     hook: f.preview,
-    minutes: estimateMinutes(f.content),
+    minutes: estimateReadMinutes(f.content),
   }));
 
   return (

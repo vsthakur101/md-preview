@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, Trash2, Loader2 } from 'lucide-react';
+import { FileText, Trash2, Loader2, BookOpen, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +12,10 @@ interface FileCardProps {
   title: string;
   preview: string;
   createdAt: string;
+  minutes?: number;
+  /** Reading progress 0..1 (from localStorage; 0 = not started). */
+  progress?: number;
+  finished?: boolean;
   onDelete: (id: string) => void;
 }
 
@@ -35,11 +39,21 @@ function categoryColor(title: string): string {
   return 'var(--cat-neutral)';
 }
 
-export default function FileCard({ id, title, preview, createdAt, onDelete }: FileCardProps) {
+export default function FileCard({
+  id,
+  title,
+  preview,
+  createdAt,
+  minutes,
+  progress = 0,
+  finished = false,
+  onDelete,
+}: FileCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const color = categoryColor(title);
+  const inProgress = !finished && progress > 0.03 && progress < 0.97;
 
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -72,7 +86,7 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
       {/* Category accent strip */}
       <span aria-hidden className="absolute inset-y-0 left-0 w-0.75" style={{ background: color }} />
 
-      <Link href={`/library/${id}`} className="block p-5">
+      <Link href={`/library/${id}`} className="block p-5 pb-3">
         <div className="flex items-start gap-3">
           <div
             className="flex size-10 shrink-0 items-center justify-center rounded-lg"
@@ -82,13 +96,49 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate font-medium text-foreground">{title}</h3>
-            <p className="mt-0.5 text-meta text-muted-foreground">{formattedDate}</p>
+            <p className="mt-0.5 text-meta text-muted-foreground">
+              {formattedDate}
+              {minutes ? <> · {minutes} min read</> : null}
+            </p>
           </div>
         </div>
         <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
           {preview || 'No preview available'}
         </p>
       </Link>
+
+      {/* Reading state: finished badge / in-progress %, plus a direct reader link */}
+      <div className="flex items-center justify-between gap-3 px-5 pb-4">
+        {finished ? (
+          <span className="inline-flex items-center gap-1.5 text-meta font-medium text-primary">
+            <CheckCircle2 className="size-3.5" />
+            Finished
+          </span>
+        ) : inProgress ? (
+          <span className="text-meta font-medium tabular-nums text-primary">
+            {Math.round(progress * 100)}% read
+          </span>
+        ) : (
+          <span aria-hidden />
+        )}
+        <Link
+          href={`/read/${id}`}
+          className="inline-flex items-center gap-1.5 text-meta font-medium text-muted-foreground transition-colors hover:text-primary"
+        >
+          <BookOpen className="size-3.5" />
+          {inProgress ? 'Continue' : finished ? 'Read again' : 'Read'}
+        </Link>
+      </div>
+
+      {/* In-progress articles wear their position as a hairline along the base. */}
+      {inProgress && (
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-border">
+          <div
+            className="h-full bg-primary transition-[width] duration-300"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+      )}
 
       {/* Delete control — always visible on touch, hover-reveal on desktop */}
       <div
