@@ -66,10 +66,10 @@ export default function LibraryPage() {
   }, [files, query, sort]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-warm-radial text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 sm:px-4">
+        <div className="mx-auto flex max-w-275 items-center justify-between px-3 py-3 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button asChild variant="ghost" size="icon" title="Back to Editor">
               <Link href="/">
@@ -77,7 +77,7 @@ export default function LibraryPage() {
               </Link>
             </Button>
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-linear-to-br from-purple-500 to-pink-600 text-white">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <LibraryBig className="size-5" />
               </div>
               <h1 className="text-lg font-semibold sm:text-xl">Library</h1>
@@ -90,9 +90,9 @@ export default function LibraryPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-8">
-        {/* Toolbar */}
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <main className="mx-auto max-w-275 px-3 py-4 sm:px-4 sm:py-8">
+        {/* Toolbar — shares the card surface system so it doesn't float on the canvas */}
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -143,7 +143,7 @@ export default function LibraryPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {visibleFiles.map((file) => (
               <FileCard
                 key={file.id}

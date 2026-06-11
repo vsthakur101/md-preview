@@ -186,7 +186,7 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={PLACEHOLDER}
-        className="scrollbar-thin flex-1 w-full resize-none bg-background p-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none sm:p-4"
+        className="scrollbar-thin flex-1 w-full resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none sm:p-4"
         spellCheck={false}
       />
       <div className="flex shrink-0 items-center justify-end gap-3 border-t px-3 py-1.5 text-xs text-muted-foreground tabular-nums">
