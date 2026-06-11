@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { FileText, Trash2, Loader2 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -15,9 +15,30 @@ interface FileCardProps {
   onDelete: (id: string) => void;
 }
 
+/*
+ * Category accent, derived from the title. The 3px strip + tinted icon is what
+ * keeps a grid of cards from reading as identical grey boxes.
+ */
+const CATEGORIES: { color: string; test: RegExp }[] = [
+  { color: '#e0a458', test: /faang|interview|system design|leetcode|dsa|behavioral|resume/i },
+  { color: '#7fb069', test: /fitness|workout|gym|health|diet|nutrition|running|sleep/i },
+  { color: '#b497e7', test: /\bai\b|llm|gpt|claude|machine learning|\bml\b|prompt|agent|rag\b/i },
+  { color: '#d96a5f', test: /cyber|security|hack|pentest|vulnerab|exploit|threat/i },
+  { color: '#74a4d9', test: /next\.?js|react|typescript|javascript|node|css|frontend|backend|\bapi\b|\bdev\b/i },
+];
+
+function categoryColor(title: string): string {
+  for (const c of CATEGORIES) {
+    if (c.test.test(title)) return c.color;
+  }
+  return '#9a968a'; // neutral for uncategorized
+}
+
 export default function FileCard({ id, title, preview, createdAt, onDelete }: FileCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const color = categoryColor(title);
 
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -41,20 +62,29 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
   };
 
   return (
-    <Card className="group relative gap-0 overflow-hidden p-0 transition-all duration-200 hover:border-foreground/20 hover:shadow-md">
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+      className="file-card group relative overflow-hidden rounded-xl border bg-card text-card-foreground"
+      style={{ '--cat': color } as React.CSSProperties}
+    >
+      {/* Category accent strip */}
+      <span aria-hidden className="absolute inset-y-0 left-0 w-0.75" style={{ background: color }} />
+
       <Link href={`/library/${id}`} className="block p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-semibold transition-colors group-hover:text-primary">
-              {title}
-            </h3>
-            <p className="mt-1 text-xs text-muted-foreground">{formattedDate}</p>
+        <div className="flex items-start gap-3">
+          <div
+            className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, color }}
+          >
+            <FileText className="size-5" />
           </div>
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <FileText className="size-4" />
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-medium text-foreground">{title}</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">{formattedDate}</p>
           </div>
         </div>
-        <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">
+        <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
           {preview || 'No preview available'}
         </p>
       </Link>
@@ -90,6 +120,6 @@ export default function FileCard({ id, title, preview, createdAt, onDelete }: Fi
           </Button>
         )}
       </div>
-    </Card>
+    </motion.div>
   );
 }

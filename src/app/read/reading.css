@@ -16,23 +16,27 @@
   --reading-inline-code: #ece8e0;
   --reading-code-bg: #f5f2ec;
 
-  background: var(--reading-bg);
+  /* Faint radial behind the content so the dark space reads as intentional. */
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 0%, var(--reading-card) 0%, var(--reading-bg) 60%)
+      fixed no-repeat var(--reading-bg);
   color: var(--reading-text);
   min-height: 100vh;
 }
 
+/* Dark values track the global warm scale (see globals.css palette table). */
 .dark .reader-root {
-  --reading-bg: #1a1a18;
-  --reading-text: #e8e6e1;
-  --reading-muted: #918b81;
-  --reading-muted-strong: #b8b2a8;
-  --reading-accent: #d98a4f;
-  --reading-accent-strong: #e3a06f;
-  --reading-rule: #322f2a;
-  --reading-card: #232220;
-  --reading-card-border: #34322d;
-  --reading-inline-code: #2a2824;
-  --reading-code-bg: #201f1c;
+  --reading-bg: #14130f;
+  --reading-text: #edeae0;
+  --reading-muted: #9a968a;
+  --reading-muted-strong: #c1bcaf;
+  --reading-accent: #e0a458;
+  --reading-accent-strong: #ecbe83;
+  --reading-rule: #2e2c24;
+  --reading-card: #1c1b16;
+  --reading-card-border: #2e2c24;
+  --reading-inline-code: #252319;
+  --reading-code-bg: #191812;
 }
 
 .reader-root ::selection {
@@ -363,24 +367,82 @@
 
 .reading-main {
   padding: 5rem 1.25rem 9rem;
+  min-width: 0;
 }
 
-/* Floating TOC — visible only when there's room beside the centered column. */
+/*
+ * Reading rail (lg+): a sticky TOC occupies the former empty left gutter and
+ * the article centers in the remaining space, so the column sits optically
+ * between rail and edge instead of floating in a void. Grid only engages when
+ * a TOC exists (single-heading articles stay simply centered).
+ */
 .reading-toc {
   display: none;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
+  .reading-layout:has(> .reading-toc) {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 2.5rem;
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
   .reading-toc {
     display: block;
-    position: fixed;
-    top: 5rem;
-    left: max(1.5rem, calc((100vw - 42rem) / 2 - 17rem));
-    width: 15rem;
-    max-height: calc(100vh - 7rem);
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+    margin-top: 5rem; /* align with the article's top padding */
+    max-height: calc(100vh - 8rem);
     overflow-y: auto;
-    z-index: 40;
-    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    /* hairline marking the rail/content boundary */
+    border-right: 1px solid var(--reading-rule);
+    padding-right: 1.25rem;
   }
+}
+
+/* Mobile: the same TOC inside a slide-in drawer. */
+.reading-toc-toggle {
+  display: flex;
+}
+@media (min-width: 1024px) {
+  .reading-toc-toggle {
+    display: none;
+  }
+}
+.reading-toc-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.reading-toc-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.reading-toc-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(20rem, 85vw);
+  background: var(--reading-bg);
+  border-right: 1px solid var(--reading-rule);
+  padding: 1.5rem 1.25rem;
+  overflow-y: auto;
+}
+.reading-toc.reading-toc--drawer {
+  display: block;
+  position: static;
+  margin-top: 0;
+  max-height: none;
+  border-right: none;
+  padding-right: 0;
 }
 .reading-toc-label {
   font-size: 0.7rem;

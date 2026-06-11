@@ -49,6 +49,7 @@ export default function Reader({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [chromeHidden, setChromeHidden] = useState(false);
   const [focus, setFocus] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
 
   const focusRef = useRef(false);
   const spotRef = useRef<Element | null>(null);
@@ -172,6 +173,36 @@ export default function Reader({
 
   const showResume = mounted && !resumeDismissed && savedFraction > 0.03 && savedFraction < 0.97;
 
+  // Shared by the desktop rail and the mobile drawer.
+  const renderTocList = (onNavigate?: () => void) => (
+    <ul>
+      {headings.map((h, i) => {
+        const state = i < activeIndex ? 'done' : i === activeIndex ? 'current' : 'upcoming';
+        return (
+          <li key={h.id} data-depth={h.depth} data-state={state}>
+            <button
+              onClick={() => {
+                scrollToId(h.id);
+                onNavigate?.();
+              }}
+              className="reading-toc-item"
+            >
+              <span className="reading-toc-marker" aria-hidden>
+                {state === 'done' ? (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="reading-toc-text">{h.text}</span>
+              <span className="reading-toc-time">{h.minutes}m</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div className="reader-root" data-focus={focus ? 'on' : 'off'}>
       {/* Scroll progress bar */}
@@ -191,6 +222,18 @@ export default function Reader({
             <path d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </Link>
+        {headings.length > 1 && (
+          <button
+            className="reading-icon-btn reading-toc-toggle"
+            onClick={() => setTocOpen(true)}
+            aria-label="Table of contents"
+            title="Contents"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16M4 18h10" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
         <span className="reading-chrome-title">{title}</span>
         <span className="reading-chrome-time">
           <span ref={timeRef}>{minutes} min left</span>
@@ -215,26 +258,7 @@ export default function Reader({
         {headings.length > 1 && (
           <nav className="reading-toc" aria-label="Table of contents">
             <p className="reading-toc-label">Contents</p>
-            <ul>
-              {headings.map((h, i) => {
-                const state = i < activeIndex ? 'done' : i === activeIndex ? 'current' : 'upcoming';
-                return (
-                  <li key={h.id} data-depth={h.depth} data-state={state}>
-                    <button onClick={() => scrollToId(h.id)} className="reading-toc-item">
-                      <span className="reading-toc-marker" aria-hidden>
-                        {state === 'done' ? (
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        ) : null}
-                      </span>
-                      <span className="reading-toc-text">{h.text}</span>
-                      <span className="reading-toc-time">{h.minutes}m</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            {renderTocList()}
           </nav>
         )}
 
@@ -247,6 +271,35 @@ export default function Reader({
           />
         </main>
       </div>
+
+      {/* Mobile TOC drawer */}
+      <AnimatePresence>
+        {tocOpen && (
+          <div className="reading-toc-drawer">
+            <motion.button
+              className="reading-toc-scrim"
+              aria-label="Close table of contents"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setTocOpen(false)}
+            />
+            <motion.div
+              className="reading-toc-panel"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              <nav className="reading-toc reading-toc--drawer" aria-label="Table of contents">
+                <p className="reading-toc-label">Contents</p>
+                {renderTocList(() => setTocOpen(false))}
+              </nav>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Investment layers (Phase 4) */}
       <HighlightLayer articleId={articleId} initial={initialHighlights} />

@@ -9,48 +9,76 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* shadcn/ui design tokens (neutral palette, oklch). */
+/*
+ * Warm design system. The shadcn token names are kept (so every existing
+ * Button/Card/Input inherits the new look for free), but their *values* are
+ * remapped to a warm scale — no pure #000 / #FFF anywhere. `--brand` is the
+ * amber signature color used for primary actions, links and active states.
+ *
+ * Light = warm paper, Dark = warm near-black. See the UI brief palette table.
+ */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+
+  /* Warm paper scale */
+  --bg-base: #fafaf8;
+  --bg-raised: #fefdfb;
+  --bg-raised-2: #f3f0ea;
+  --border-subtle: #e7e3d8;
+  --text-primary: #2a2823;
+  --text-muted: #6b665c;
+  --brand: #b5731e; /* amber, darkened for contrast on paper */
+  --brand-foreground: #fdfcf9;
+
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-raised);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-raised);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--bg-raised-2);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-raised-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-raised-2);
+  --accent-foreground: var(--text-primary);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --ring: var(--brand);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Warm near-black scale */
+  --bg-base: #14130f;
+  --bg-raised: #1c1b16;
+  --bg-raised-2: #252319;
+  --border-subtle: #2e2c24;
+  --text-primary: #edeae0;
+  --text-muted: #9a968a;
+  --brand: #e0a458;
+  --brand-foreground: #1a1813;
+
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-raised);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-raised);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--bg-raised-2);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-raised-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-raised-2);
+  --accent-foreground: var(--text-primary);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --ring: var(--brand);
 }
 
 @theme inline {
@@ -72,6 +100,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-raised-2: var(--bg-raised-2);
+  --color-border-subtle: var(--border-subtle);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -84,6 +117,31 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/*
+ * Warm ambient background. Fills otherwise-flat dark space with a faint radial
+ * so the area around centered content reads as intentional, not abandoned.
+ * Applied to the library and (via reading.css) the reading view.
+ */
+.bg-warm-radial {
+  background:
+    radial-gradient(ellipse 110% 80% at 50% 0%, var(--bg-raised) 0%, var(--bg-base) 60%)
+      no-repeat;
+  background-attachment: fixed;
+}
+
+/*
+ * Library card hover: raise the surface, tint the border toward the card's
+ * category color (--cat, set inline per card). Motion handles the translate.
+ */
+.file-card {
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.file-card:hover {
+  background: var(--bg-raised-2);
+  border-color: color-mix(in srgb, var(--cat, var(--brand)) 45%, var(--border-subtle));
+  box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.35);
 }
 
 /* Custom scrollbar styles */
