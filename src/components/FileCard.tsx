@@ -24,6 +24,10 @@ interface FileCardProps {
   snippet?: string | null;
   /** The active search term, for emphasizing matches in the snippet. */
   highlightTerm?: string;
+  /** Bulk-select mode: clicking the card toggles selection instead of navigating. */
+  selectMode?: boolean;
+  selected?: boolean;
+  onSelectToggle?: (id: string) => void;
   /** Union of tags across the library, for editor suggestions. */
   allTags?: string[];
   onDelete: (id: string) => void;
@@ -81,6 +85,9 @@ export default function FileCard({
   tags = [],
   snippet = null,
   highlightTerm = '',
+  selectMode = false,
+  selected = false,
+  onSelectToggle,
   allTags = [],
   onDelete,
   onPinToggle,
@@ -147,13 +154,41 @@ export default function FileCard({
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ duration: 0.15, ease: 'easeOut' }}
-      className="file-card group relative overflow-hidden rounded-xl border bg-card text-card-foreground"
+      className={cn(
+        'file-card group relative overflow-hidden rounded-xl border bg-card text-card-foreground',
+        selectMode && selected && 'border-primary ring-2 ring-primary/40'
+      )}
       style={{ '--cat': color } as React.CSSProperties}
     >
       {/* Category accent strip */}
       <span aria-hidden className="absolute inset-y-0 left-0 w-0.75" style={{ background: color }} />
 
-      <Link href={`/library/${id}`} className="block p-5 pb-3">
+      {/* Select-mode checkbox */}
+      {selectMode && (
+        <span
+          aria-hidden
+          className={cn(
+            'absolute right-3 top-3 z-10 flex size-5 items-center justify-center rounded-full border-2',
+            selected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border-strong bg-background/80'
+          )}
+        >
+          {selected && <CheckCircle2 className="size-4" />}
+        </span>
+      )}
+
+      <Link
+        href={`/library/${id}`}
+        className="block p-5 pb-3"
+        aria-pressed={selectMode ? selected : undefined}
+        onClick={(e) => {
+          if (selectMode) {
+            e.preventDefault();
+            onSelectToggle?.(id);
+          }
+        }}
+      >
         <div className="flex items-start gap-3">
           <div
             className="flex size-10 shrink-0 items-center justify-center rounded-lg"
@@ -208,6 +243,12 @@ export default function FileCard({
         <Link
           href={`/read/${id}`}
           className="inline-flex items-center gap-1.5 text-meta font-medium text-muted-foreground transition-colors hover:text-primary"
+          onClick={(e) => {
+            if (selectMode) {
+              e.preventDefault();
+              onSelectToggle?.(id);
+            }
+          }}
         >
           <BookOpen className="size-3.5" />
           {inProgress ? 'Continue' : finished ? 'Read again' : 'Read'}
@@ -224,7 +265,9 @@ export default function FileCard({
         </div>
       )}
 
-      {/* Delete control — always visible on touch, hover-reveal on desktop */}
+      {/* Delete control — always visible on touch, hover-reveal on desktop.
+          Hidden entirely in select mode (the checkbox owns that corner). */}
+      {!selectMode && (
       <div
         className={cn(
           'absolute right-3 top-3 transition-opacity',
@@ -291,6 +334,7 @@ export default function FileCard({
           </div>
         )}
       </div>
+      )}
     </motion.div>
   );
 }

@@ -144,33 +144,100 @@ export default function LibraryPage() {
     return () => clearTimeout(timer);
   }, [fetchFiles]);
 
-  const [undoFile, setUndoFile] = useState<{ id: string; title: string } | null>(null);
+  const [undo, setUndo] = useState<{ ids: string[]; label: string } | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showUndo = (ids: string[], label: string) => {
+    setUndo({ ids, label });
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 7000);
+  };
 
   // Deletes are soft server-side; offer a 7s undo window.
   const handleDelete = (id: string) => {
     const deleted = files.find((f) => f.id === id);
     setFiles((prev) => prev.filter((file) => file.id !== id));
-    if (deleted) {
-      setUndoFile({ id, title: deleted.title });
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-      undoTimer.current = setTimeout(() => setUndoFile(null), 7000);
-    }
+    if (deleted) showUndo([id], deleted.title);
   };
 
   const handleUndo = async () => {
-    if (!undoFile) return;
-    const target = undoFile;
-    setUndoFile(null);
+    if (!undo) return;
+    const target = undo;
+    setUndo(null);
     if (undoTimer.current) clearTimeout(undoTimer.current);
     try {
-      const res = await fetch(`/api/files/${target.id}/restore`, { method: 'POST' });
-      if (!res.ok) throw new Error('Restore failed');
+      for (const id of target.ids) {
+        await fetch(`/api/files/${id}/restore`, { method: 'POST' });
+      }
       fetchFiles(true);
     } catch (err) {
       console.error('Undo error:', err);
-      setError('Could not restore the file.');
+      setError('Could not restore.');
     }
+  };
+
+  // Bulk select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkTag, setBulkTag] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setBulkTag('');
+  };
+
+  const handleSelectToggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    const deleted: string[] = [];
+    for (const id of selectedIds) {
+      try {
+        const res = await fetch(`/api/files/${id}`, { method: 'DELETE' });
+        if (res.ok) deleted.push(id);
+        else if (res.status === 429) break; // rate-limited: stop, keep the rest
+      } catch {
+        /* skip */
+      }
+    }
+    setBulkBusy(false);
+    if (deleted.length > 0) {
+      setFiles((prev) => prev.filter((f) => !deleted.includes(f.id)));
+      showUndo(deleted, `${deleted.length} file${deleted.length === 1 ? '' : 's'}`);
+    }
+    exitSelectMode();
+  };
+
+  const handleBulkTag = async () => {
+    const tag = bulkTag.trim().toLowerCase();
+    if (!tag || selectedIds.size === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    for (const id of selectedIds) {
+      const file = files.find((f) => f.id === id);
+      if (!file || file.tags?.includes(tag)) continue;
+      try {
+        await fetch(`/api/files/${id}/tags`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags: [...(file.tags ?? []), tag] }),
+        });
+      } catch {
+        /* skip */
+      }
+    }
+    setBulkBusy(false);
+    exitSelectMode();
+    fetchFiles(true);
   };
 
   const handlePinToggle = (id: string, pinned: boolean) => {
@@ -371,6 +438,13 @@ export default function LibraryPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant={selectMode ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+              >
+                {selectMode ? 'Done' : 'Select'}
+              </Button>
               <LibraryImport onImported={() => fetchFiles(true)} />
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Sort
@@ -444,6 +518,9 @@ export default function LibraryPage() {
                 snippet={file.snippet ?? null}
                 highlightTerm={query}
                 allTags={allTags}
+                selectMode={selectMode}
+                selected={selectedIds.has(file.id)}
+                onSelectToggle={handleSelectToggle}
                 onDelete={handleDelete}
                 onPinToggle={handlePinToggle}
                 onTagsChange={handleTagsChange}
@@ -454,11 +531,45 @@ export default function LibraryPage() {
         )}
       </main>
 
+      {/* Bulk action bar */}
+      {selectMode && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-full border bg-popover py-2 pl-4 pr-2 text-sm shadow-lg">
+          <span className="font-medium tabular-nums">{selectedIds.size} selected</span>
+          <Input
+            value={bulkTag}
+            onChange={(e) => setBulkTag(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleBulkTag()}
+            placeholder="Add tag…"
+            className="h-8 w-28"
+            aria-label="Tag for selected files"
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleBulkTag}
+            disabled={bulkBusy || !bulkTag.trim() || selectedIds.size === 0}
+          >
+            Tag
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleBulkDelete}
+            disabled={bulkBusy || selectedIds.size === 0}
+          >
+            {bulkBusy ? <Loader2 className="size-3.5 animate-spin" /> : `Delete ${selectedIds.size || ''}`}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={exitSelectMode}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
       {/* Soft-delete undo toast */}
-      {undoFile && (
+      {!selectMode && undo && (
         <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-popover py-2 pl-4 pr-2 text-sm shadow-lg">
           <span className="max-w-56 truncate">
-            Deleted <span className="font-medium">{undoFile.title}</span>
+            Deleted <span className="font-medium">{undo.label}</span>
           </span>
           <Button size="sm" variant="secondary" onClick={handleUndo}>
             Undo
