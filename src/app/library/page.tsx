@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles, BarChart3 } from 'lucide-react';
 import FileCard from '@/components/FileCard';
 import LibraryImport from '@/components/LibraryImport';
+import TrashPanel from '@/components/TrashPanel';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,7 @@ export default function LibraryPage() {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [creatingSample, setCreatingSample] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
   const router = useRouter();
 
   const hasLoadedRef = useRef(false);
@@ -301,6 +303,14 @@ export default function LibraryPage() {
                 )}
               </span>
             )}
+            <button
+              onClick={() => setTrashOpen((v) => !v)}
+              className={`order-last rounded-full px-2.5 py-1.5 text-meta font-medium transition-colors ${
+                trashOpen ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Trash
+            </button>
             {FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -380,6 +390,8 @@ export default function LibraryPage() {
             </div>
           </div>
         </div>
+
+        {trashOpen && <TrashPanel onRestored={() => fetchFiles(true)} />}
 
         {/* Content */}
         {isLoading ? (

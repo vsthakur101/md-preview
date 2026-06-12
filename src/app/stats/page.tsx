@@ -24,7 +24,7 @@ export default async function StatsPage() {
   if (!session?.user?.id) redirect('/signin?callbackUrl=/stats');
   const userId = session.user.id;
 
-  const [files, highlightCount, noteCount, reactionCount] = await Promise.all([
+  const [files, highlightCount, noteCount, reactionCount, recent] = await Promise.all([
     prisma.markdownFile.findMany({
       where: { userId, deletedAt: null },
       select: {
@@ -37,6 +37,16 @@ export default async function StatsPage() {
     prisma.highlight.count({ where: { userId, file: { deletedAt: null } } }),
     prisma.highlight.count({ where: { userId, note: { not: null }, file: { deletedAt: null } } }),
     prisma.reaction.count({ where: { userId, file: { deletedAt: null } } }),
+    prisma.readingProgress.findMany({
+      where: { userId, file: { deletedAt: null } },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: {
+        fraction: true,
+        updatedAt: true,
+        file: { select: { id: true, title: true } },
+      },
+    }),
   ]);
 
   // Synced positions only — a device that hasn't synced yet isn't counted.
@@ -117,6 +127,40 @@ export default async function StatsPage() {
             </div>
           ))}
         </div>
+
+        {recent.length > 0 && (
+          <section className="mt-6 rounded-xl border bg-card p-5">
+            <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Recent activity
+            </p>
+            <ul className="flex flex-col gap-3">
+              {recent.map((r) => {
+                const pct = Math.round(r.fraction * 100);
+                return (
+                  <li key={r.file.id}>
+                    <Link
+                      href={`/read/${r.file.id}`}
+                      className="group flex items-center gap-3"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-primary">
+                        {r.file.title}
+                      </span>
+                      <span className="h-1 w-24 shrink-0 overflow-hidden rounded-full bg-muted">
+                        <span
+                          className="block h-full rounded-full bg-primary"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </span>
+                      <span className="w-10 shrink-0 text-right text-meta tabular-nums text-muted-foreground">
+                        {pct}%
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">

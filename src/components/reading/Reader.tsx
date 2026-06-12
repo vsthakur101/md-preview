@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '@/components/ThemeToggle';
 import HighlightLayer, { type InitialHighlight } from '@/components/reading/HighlightLayer';
@@ -52,6 +53,7 @@ export default function Reader({
   initialShareId = null,
   children,
 }: ReaderProps) {
+  const router = useRouter();
   const fillRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLSpanElement>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -305,6 +307,10 @@ export default function Reader({
           break;
         case 't':
           if (headings.length > 1) setTocOpen((v) => !v);
+          break;
+        case 'n':
+          if (related[0]) router.push(`/read/${related[0].id}`);
+          else return;
           break;
         case '?':
           setHelpOpen((v) => !v);
