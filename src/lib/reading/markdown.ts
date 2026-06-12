@@ -9,6 +9,7 @@ import rehypeStringify from 'rehype-stringify';
 import { visit } from 'unist-util-visit';
 import { toString as mdToString } from 'mdast-util-to-string';
 import GithubSlugger from 'github-slugger';
+import { parseFrontmatter } from '@/lib/frontmatter';
 
 const WORDS_PER_MINUTE = 230;
 const PULLQUOTE_MAX_CHARS = 170;
@@ -119,6 +120,8 @@ const prettyCodeOptions: PrettyCodeOptions = {
 
 /** Render user markdown to server-side HTML plus TOC + reading stats. */
 export async function renderArticle(markdown: string): Promise<RenderedArticle> {
+  // YAML frontmatter is metadata, not prose — never render it.
+  markdown = parseFrontmatter(markdown).body;
   const collector: { headings: any[]; words: number } = { headings: [], words: 0 };
 
   const file = await unified()

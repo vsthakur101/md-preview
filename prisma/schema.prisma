@@ -21,6 +21,8 @@ model MarkdownFile {
   shareId    String?           @unique
   // Pinned files surface first in the library.
   pinned     Boolean           @default(false)
+  // Normalized (lowercase, deduped) labels for library organization.
+  tags       String[]          @default([])
   highlights Highlight[]
   reactions  Reaction[]
   progress   ReadingProgress[]

@@ -8,6 +8,21 @@ import { z } from 'zod';
  */
 export const MAX_CONTENT_BYTES = 256_000;
 export const MAX_TITLE_LENGTH = 200;
+export const MAX_TAGS = 10;
+export const MAX_TAG_LENGTH = 30;
+
+/** Lowercase, trim, drop empties, dedupe, cap count + length. */
+export function normalizeTags(tags: string[]): string[] {
+  const seen = new Set<string>();
+  for (const raw of tags) {
+    const tag = raw.trim().toLowerCase().slice(0, MAX_TAG_LENGTH);
+    if (tag) seen.add(tag);
+    if (seen.size >= MAX_TAGS) break;
+  }
+  return [...seen];
+}
+
+export const tagsSchema = z.array(z.string()).max(50).transform(normalizeTags);
 
 export const fileInputSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(MAX_TITLE_LENGTH),
@@ -15,6 +30,7 @@ export const fileInputSchema = z.object({
     .string()
     .min(1, 'Content is required')
     .max(MAX_CONTENT_BYTES, 'Content is too large'),
+  tags: tagsSchema.optional(),
 });
 
 export type FileInput = z.infer<typeof fileInputSchema>;

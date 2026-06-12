@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FileText, Trash2, Loader2, BookOpen, CheckCircle2, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import TagEditor from '@/components/TagEditor';
 import { cn } from '@/lib/utils';
 
 interface FileCardProps {
@@ -17,8 +18,13 @@ interface FileCardProps {
   progress?: number;
   finished?: boolean;
   pinned?: boolean;
+  tags?: string[];
+  /** Union of tags across the library, for editor suggestions. */
+  allTags?: string[];
   onDelete: (id: string) => void;
   onPinToggle?: (id: string, pinned: boolean) => void;
+  onTagsChange?: (id: string, tags: string[]) => void;
+  onTagClick?: (tag: string) => void;
 }
 
 /*
@@ -50,8 +56,12 @@ export default function FileCard({
   progress = 0,
   finished = false,
   pinned = false,
+  tags = [],
+  allTags = [],
   onDelete,
   onPinToggle,
+  onTagsChange,
+  onTagClick,
 }: FileCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -129,6 +139,23 @@ export default function FileCard({
         </p>
       </Link>
 
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-5 pb-1">
+          {tags.slice(0, 4).map((tag) => (
+            <button
+              key={tag}
+              onClick={() => onTagClick?.(tag)}
+              className="rounded-full bg-muted px-2 py-0.5 text-meta text-muted-foreground transition-colors hover:bg-accent-muted hover:text-foreground"
+            >
+              {tag}
+            </button>
+          ))}
+          {tags.length > 4 && (
+            <span className="px-1 py-0.5 text-meta text-muted-foreground">+{tags.length - 4}</span>
+          )}
+        </div>
+      )}
+
       {/* Reading state: finished badge / in-progress %, plus a direct reader link */}
       <div className="flex items-center justify-between gap-3 px-5 pb-4">
         {finished ? (
@@ -181,6 +208,9 @@ export default function FileCard({
           </div>
         ) : (
           <div className="flex items-center gap-1">
+            {onTagsChange && (
+              <TagEditor fileId={id} tags={tags} allTags={allTags} onTagsChange={onTagsChange} />
+            )}
             {onPinToggle && (
               <Button
                 size="icon"

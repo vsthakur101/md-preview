@@ -20,6 +20,7 @@ interface MarkdownFile {
   createdAt: string;
   minutes?: number;
   pinned?: boolean;
+  tags?: string[];
   /** Server-synced reading position (cross-device). */
   serverFraction?: number;
   serverReadAt?: string | null;
@@ -50,6 +51,7 @@ export default function LibraryPage() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('newest');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [creatingSample, setCreatingSample] = useState(false);
   const router = useRouter();
 
@@ -116,6 +118,10 @@ export default function LibraryPage() {
     setFiles((prev) => prev.map((file) => (file.id === id ? { ...file, pinned } : file)));
   };
 
+  const handleTagsChange = (id: string, tags: string[]) => {
+    setFiles((prev) => prev.map((file) => (file.id === id ? { ...file, tags } : file)));
+  };
+
   // Seed the sample article and drop the user straight into the reader.
   const handleAddSample = async () => {
     setCreatingSample(true);
@@ -123,7 +129,7 @@ export default function LibraryPage() {
       const res = await fetch('/api/files', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: SAMPLE_TITLE, content: SAMPLE_CONTENT }),
+        body: JSON.stringify({ title: SAMPLE_TITLE, content: SAMPLE_CONTENT, tags: ['sample', 'reading'] }),
       });
       if (!res.ok) throw new Error('Failed to create sample');
       const file = await res.json();
@@ -150,12 +156,21 @@ export default function LibraryPage() {
     return counts;
   }, [files, readState]);
 
+  const allTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const f of files) for (const t of f.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag]) => tag);
+  }, [files]);
+
   const visibleFiles = useMemo(() => {
     // Text matching happens server-side (?q= covers full content); only the
-    // reading-state filter and sort remain client concerns.
+    // reading-state/tag filters and sort remain client concerns.
     let filtered = files;
     if (filter !== 'all') {
       filtered = filtered.filter((f) => readState(f.id) === filter);
+    }
+    if (tagFilter) {
+      filtered = filtered.filter((f) => f.tags?.includes(tagFilter));
     }
 
     const sorted = [...filtered].sort((a, b) => {
@@ -167,7 +182,7 @@ export default function LibraryPage() {
       return sort === 'newest' ? diff : -diff;
     });
     return sorted;
-  }, [files, sort, filter, readState]);
+  }, [files, sort, filter, tagFilter, readState]);
 
   return (
     <div className="min-h-screen bg-warm-radial text-foreground">
@@ -243,6 +258,33 @@ export default function LibraryPage() {
             ))}
           </div>
 
+          {/* Tag filter chips (only when the library has tags) */}
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5" aria-label="Filter by tag">
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+                  className={`rounded-full px-2.5 py-1 text-meta font-medium transition-colors ${
+                    tagFilter === tag
+                      ? 'bg-accent-muted text-foreground ring-1 ring-primary/50'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  #{tag}
+                </button>
+              ))}
+              {tagFilter && (
+                <button
+                  onClick={() => setTagFilter(null)}
+                  className="px-1.5 text-meta text-muted-foreground underline-offset-2 hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -296,6 +338,12 @@ export default function LibraryPage() {
                 <>
                   No files match <span className="font-medium text-foreground">“{query}”</span>
                 </>
+              ) : tagFilter ? (
+                <>
+                  Nothing tagged <span className="font-medium text-foreground">#{tagFilter}</span>
+                  {filter !== 'all' &&
+                    ` that is ${FILTERS.find((f) => f.key === filter)?.label.toLowerCase()}`}
+                </>
               ) : (
                 <>
                   Nothing {FILTERS.find((f) => f.key === filter)?.label.toLowerCase()} yet
@@ -316,8 +364,12 @@ export default function LibraryPage() {
                 progress={reading?.progress[file.id] ?? 0}
                 finished={reading?.finished[file.id] ?? false}
                 pinned={file.pinned ?? false}
+                tags={file.tags ?? []}
+                allTags={allTags}
                 onDelete={handleDelete}
                 onPinToggle={handlePinToggle}
+                onTagsChange={handleTagsChange}
+                onTagClick={(tag) => setTagFilter(tag)}
               />
             ))}
           </div>

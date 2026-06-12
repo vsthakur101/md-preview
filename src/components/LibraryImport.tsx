@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { UploadCloud, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MAX_CONTENT_BYTES, MAX_TITLE_LENGTH } from '@/lib/validation';
+import { parseFrontmatter } from '@/lib/frontmatter';
 
 interface LibraryImportProps {
   /** Called after at least one file was imported successfully. */
@@ -54,15 +55,18 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
         continue;
       }
       try {
-        const content = await file.text();
+        const raw = await file.text();
+        // Frontmatter wins for title/tags and is stripped from the stored body.
+        const { title: fmTitle, tags, body: content } = parseFrontmatter(raw);
         if (!content.trim()) {
           result.failed.push({ name: file.name, reason: 'empty file' });
           continue;
         }
+        const title = fmTitle?.slice(0, MAX_TITLE_LENGTH) || deriveTitle(file.name, content);
         const res = await fetch('/api/files', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: deriveTitle(file.name, content), content }),
+          body: JSON.stringify({ title, content, tags }),
         });
         if (res.ok) {
           result.ok++;
