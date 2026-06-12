@@ -914,6 +914,27 @@
 .reading-recap {
   margin-bottom: 3rem;
 }
+.reading-recap-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.reading-recap-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.reading-recap-all {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--reading-accent);
+  text-decoration: none;
+}
+.reading-recap-all:hover {
+  color: var(--reading-accent-strong);
+}
 .reading-recap ul {
   list-style: none;
   margin: 0;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getRangeOffsets, applyHighlight, removeHighlight } from '@/lib/reading/highlighting';
 
 export interface InitialHighlight {
@@ -29,12 +29,19 @@ const root = () => document.getElementById('article');
 export default function HighlightLayer({ articleId, initial }: Props) {
   const [sel, setSel] = useState<Selecting | null>(null);
   const [removeAt, setRemoveAt] = useState<{ x: number; y: number; id: string } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // id → highlighted text, so the popover can copy without re-reading the DOM.
+  const textsRef = useRef(new Map<string, string>());
 
   // Re-apply saved highlights once the article is in the DOM.
   useEffect(() => {
     const el = root();
     if (!el) return;
-    for (const h of initial) applyHighlight(el, h.startOff, h.endOff, h.id, h.color);
+    for (const h of initial) {
+      textsRef.current.set(h.id, h.text);
+      applyHighlight(el, h.startOff, h.endOff, h.id, h.color);
+    }
   }, [initial]);
 
   // Show the highlight toolbar when the user finishes a text selection.
@@ -91,6 +98,7 @@ export default function HighlightLayer({ articleId, initial }: Props) {
       });
       if (res.ok) {
         const h = await res.json();
+        textsRef.current.set(h.id, sel.text);
         applyHighlight(el, sel.start, sel.end, h.id, color);
         window.getSelection()?.removeAllRanges();
       }
@@ -98,6 +106,23 @@ export default function HighlightLayer({ articleId, initial }: Props) {
       /* ignore */
     }
     setSel(null);
+  };
+
+  const copyHighlight = async () => {
+    if (!removeAt) return;
+    // Fall back to the live <mark> contents (a highlight can span several marks).
+    const text =
+      textsRef.current.get(removeAt.id) ??
+      Array.from(document.querySelectorAll(`mark[data-highlight-id="${removeAt.id}"]`))
+        .map((m) => m.textContent ?? '')
+        .join('');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(removeAt.id);
+      setTimeout(() => setCopiedId(null), 1200);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
   };
 
   const deleteHighlight = async () => {
@@ -148,8 +173,11 @@ export default function HighlightLayer({ articleId, initial }: Props) {
             transform: 'translateX(-50%)',
           }}
         >
+          <button className="reading-hl-btn" onClick={copyHighlight}>
+            {copiedId === removeAt.id ? 'Copied ✓' : 'Copy'}
+          </button>
           <button className="reading-hl-btn reading-hl-remove" onClick={deleteHighlight}>
-            Remove highlight
+            Remove
           </button>
         </div>
       )}

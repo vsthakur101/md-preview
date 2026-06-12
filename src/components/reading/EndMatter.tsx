@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import CopyButton from '@/components/CopyButton';
 import { markFinished } from '@/lib/reading/progress-store';
 
 export interface RelatedRead {
@@ -52,7 +53,18 @@ export default function EndMatter({ articleId, highlights, related }: Props) {
 
       {highlights.length > 0 && (
         <div className="reading-recap">
-          <h3 className="reading-endmatter-title">Here&rsquo;s what you saved</h3>
+          <div className="reading-recap-head">
+            <h3 className="reading-endmatter-title">Here&rsquo;s what you saved</h3>
+            <div className="reading-recap-actions">
+              <CopyButton
+                text={highlights.map((h) => `> ${h.text}`).join('\n\n')}
+                label="Copy all"
+              />
+              <Link href="/highlights" className="reading-recap-all">
+                All highlights →
+              </Link>
+            </div>
+          </div>
           <ul>
             {highlights.map((h) => (
               <li key={h.id}>

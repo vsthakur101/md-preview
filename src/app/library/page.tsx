@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter } from 'lucide-react';
 import FileCard from '@/components/FileCard';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -26,6 +26,14 @@ interface ReadingState {
 }
 
 type SortKey = 'newest' | 'oldest' | 'title';
+type FilterKey = 'all' | 'unread' | 'inprogress' | 'finished';
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'inprogress', label: 'In progress' },
+  { key: 'finished', label: 'Finished' },
+];
 
 export default function LibraryPage() {
   const [files, setFiles] = useState<MarkdownFile[]>([]);
@@ -34,6 +42,7 @@ export default function LibraryPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('newest');
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   useEffect(() => {
     fetchFiles();
@@ -70,14 +79,33 @@ export default function LibraryPage() {
     setFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
+  const readState = useCallback(
+    (id: string): FilterKey => {
+      if (reading?.finished[id]) return 'finished';
+      if ((reading?.progress[id] ?? 0) > 0.03) return 'inprogress';
+      return 'unread';
+    },
+    [reading]
+  );
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<FilterKey, number> = { all: files.length, unread: 0, inprogress: 0, finished: 0 };
+    for (const f of files) counts[readState(f.id)]++;
+    return counts;
+  }, [files, readState]);
+
   const visibleFiles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = q
+    let filtered = q
       ? files.filter(
           (f) =>
             f.title.toLowerCase().includes(q) || f.preview.toLowerCase().includes(q)
         )
       : files;
+
+    if (filter !== 'all') {
+      filtered = filtered.filter((f) => readState(f.id) === filter);
+    }
 
     const sorted = [...filtered].sort((a, b) => {
       if (sort === 'title') return a.title.localeCompare(b.title);
@@ -85,7 +113,7 @@ export default function LibraryPage() {
       return sort === 'newest' ? diff : -diff;
     });
     return sorted;
-  }, [files, query, sort]);
+  }, [files, query, sort, filter, readState]);
 
   return (
     <div className="min-h-screen bg-warm-radial text-foreground">
@@ -106,6 +134,11 @@ export default function LibraryPage() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Button asChild variant="ghost" size="icon" title="My highlights">
+              <Link href="/highlights">
+                <Highlighter className="size-5" />
+              </Link>
+            </Button>
             <ThemeToggle />
             <UserMenu />
           </div>
@@ -123,33 +156,57 @@ export default function LibraryPage() {
         )}
 
         {/* Toolbar — shares the card surface system so it doesn't float on the canvas */}
-        <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search files…"
-              className="pl-9"
-              aria-label="Search files"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              Sort
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as SortKey)}
-                className="h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-3">
+          {/* Reading-state filter tabs */}
+          <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Filter by reading state">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                role="tab"
+                aria-selected={filter === f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                  filter === f.key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
               >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="title">Title A–Z</option>
-              </select>
-            </label>
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {visibleFiles.length} {visibleFiles.length === 1 ? 'file' : 'files'}
-            </span>
+                {f.label}
+                <span className={`ml-1.5 text-meta tabular-nums ${filter === f.key ? 'opacity-80' : 'opacity-60'}`}>
+                  {filterCounts[f.key]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search files…"
+                className="pl-9"
+                aria-label="Search files"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                Sort
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortKey)}
+                  className="h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="title">Title A–Z</option>
+                </select>
+              </label>
+              <span className="hidden text-sm text-muted-foreground sm:inline">
+                {visibleFiles.length} {visibleFiles.length === 1 ? 'file' : 'files'}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -170,7 +227,15 @@ export default function LibraryPage() {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Search className="mb-3 size-8 text-muted-foreground" />
             <p className="text-muted-foreground">
-              No files match <span className="font-medium text-foreground">“{query}”</span>
+              {query.trim() ? (
+                <>
+                  No files match <span className="font-medium text-foreground">“{query}”</span>
+                </>
+              ) : (
+                <>
+                  Nothing {FILTERS.find((f) => f.key === filter)?.label.toLowerCase()} yet
+                </>
+              )}
             </p>
           </div>
         ) : (
