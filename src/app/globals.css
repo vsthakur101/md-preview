@@ -193,6 +193,14 @@ body {
   background: rgba(120, 178, 246, 0.8);
 }
 
+/* Reduced motion: kill app-chrome transitions (framer uses MotionConfig). */
+@media (prefers-reduced-motion: reduce) {
+  .file-card,
+  .file-card * {
+    transition: none !important;
+  }
+}
+
 /* Custom scrollbar styles */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;

@@ -63,7 +63,17 @@ export default function LibraryPage() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('newest');
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  // Multiple active tags narrow with AND semantics.
+  const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+
+  const toggleTagFilter = (tag: string) => {
+    setTagFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
   const [creatingSample, setCreatingSample] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
   const router = useRouter();
@@ -295,8 +305,8 @@ export default function LibraryPage() {
     if (filter !== 'all') {
       filtered = filtered.filter((f) => readState(f.id) === filter);
     }
-    if (tagFilter) {
-      filtered = filtered.filter((f) => f.tags?.includes(tagFilter));
+    if (tagFilters.size > 0) {
+      filtered = filtered.filter((f) => [...tagFilters].every((t) => f.tags?.includes(t)));
     }
 
     const sorted = [...filtered].sort((a, b) => {
@@ -308,7 +318,7 @@ export default function LibraryPage() {
       return sort === 'newest' ? diff : -diff;
     });
     return sorted;
-  }, [files, sort, filter, tagFilter, readState]);
+  }, [files, sort, filter, tagFilters, readState]);
 
   return (
     <div className="min-h-screen bg-warm-radial text-foreground">
@@ -404,9 +414,10 @@ export default function LibraryPage() {
               {allTags.map((tag) => (
                 <button
                   key={tag}
-                  onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+                  aria-pressed={tagFilters.has(tag)}
+                  onClick={() => toggleTagFilter(tag)}
                   className={`rounded-full px-2.5 py-1 text-meta font-medium transition-colors ${
-                    tagFilter === tag
+                    tagFilters.has(tag)
                       ? 'bg-accent-muted text-foreground ring-1 ring-primary/50'
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
@@ -414,9 +425,9 @@ export default function LibraryPage() {
                   #{tag}
                 </button>
               ))}
-              {tagFilter && (
+              {tagFilters.size > 0 && (
                 <button
-                  onClick={() => setTagFilter(null)}
+                  onClick={() => setTagFilters(new Set())}
                   className="px-1.5 text-meta text-muted-foreground underline-offset-2 hover:underline"
                 >
                   Clear
@@ -488,9 +499,12 @@ export default function LibraryPage() {
                 <>
                   No files match <span className="font-medium text-foreground">“{query}”</span>
                 </>
-              ) : tagFilter ? (
+              ) : tagFilters.size > 0 ? (
                 <>
-                  Nothing tagged <span className="font-medium text-foreground">#{tagFilter}</span>
+                  Nothing tagged{' '}
+                  <span className="font-medium text-foreground">
+                    {[...tagFilters].map((t) => `#${t}`).join(' + ')}
+                  </span>
                   {filter !== 'all' &&
                     ` that is ${FILTERS.find((f) => f.key === filter)?.label.toLowerCase()}`}
                 </>
@@ -524,7 +538,7 @@ export default function LibraryPage() {
                 onDelete={handleDelete}
                 onPinToggle={handlePinToggle}
                 onTagsChange={handleTagsChange}
-                onTagClick={(tag) => setTagFilter(tag)}
+                onTagClick={toggleTagFilter}
               />
             ))}
           </div>

@@ -110,39 +110,75 @@ export function savePosition(fileId: string, fraction: number): void {
 
 /* ---- Daily reading minutes + goal (device-local, like the streak) ------- */
 
-interface DailyReading {
-  date: string; // YYYY-MM-DD
-  minutes: number;
-}
+const HISTORY_DAYS = 14;
 
-function readDaily(): DailyReading {
+/** date (YYYY-MM-DD) → fractional minutes, trimmed to the last HISTORY_DAYS. */
+type DailyHistory = Record<string, number>;
+
+function readDailyHistory(): DailyHistory {
   try {
     const raw = window.localStorage.getItem(DAILY_KEY);
-    const parsed = raw ? (JSON.parse(raw) as DailyReading) : null;
-    if (parsed && parsed.date === todayStr() && typeof parsed.minutes === 'number') {
-      return parsed;
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (parsed && typeof parsed === 'object') {
+      // Legacy shape from the single-day tracker: { date, minutes }.
+      const legacy = parsed as { date?: string; minutes?: number };
+      if (typeof legacy.date === 'string' && typeof legacy.minutes === 'number') {
+        return { [legacy.date]: legacy.minutes };
+      }
+      const out: DailyHistory = {};
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof v === 'number' && /^\d{4}-\d{2}-\d{2}$/.test(k)) out[k] = v;
+      }
+      return out;
     }
   } catch {
     /* fall through */
   }
-  return { date: todayStr(), minutes: 0 };
+  return {};
 }
 
-/** Credit (fractional) minutes of reading to today's bucket. */
-export function addReadingMinutes(minutes: number): void {
-  if (typeof window === 'undefined' || minutes <= 0) return;
-  const d = readDaily();
-  d.minutes += minutes;
+function writeDailyHistory(history: DailyHistory): void {
+  const trimmed = Object.fromEntries(
+    Object.entries(history)
+      .sort(([a], [b]) => (a < b ? 1 : -1))
+      .slice(0, HISTORY_DAYS)
+  );
   try {
-    window.localStorage.setItem(DAILY_KEY, JSON.stringify(d));
+    window.localStorage.setItem(DAILY_KEY, JSON.stringify(trimmed));
   } catch {
     /* ignore */
   }
 }
 
+/** Credit (fractional) minutes of reading to today's bucket. */
+export function addReadingMinutes(minutes: number): void {
+  if (typeof window === 'undefined' || minutes <= 0) return;
+  const history = readDailyHistory();
+  const today = todayStr();
+  history[today] = (history[today] ?? 0) + minutes;
+  writeDailyHistory(history);
+}
+
 export function getTodayReadingMinutes(): number {
   if (typeof window === 'undefined') return 0;
-  return Math.round(readDaily().minutes);
+  return Math.round(readDailyHistory()[todayStr()] ?? 0);
+}
+
+export interface DayReading {
+  date: string; // YYYY-MM-DD
+  minutes: number;
+}
+
+/** The last `days` calendar days (oldest first), zero-filled. */
+export function getReadingHistory(days = HISTORY_DAYS): DayReading[] {
+  if (typeof window === 'undefined') return [];
+  const history = readDailyHistory();
+  const out: DayReading[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    out.push({ date, minutes: Math.round(history[date] ?? 0) });
+  }
+  return out;
 }
 
 /** Daily goal in minutes; 0 = no goal set. */

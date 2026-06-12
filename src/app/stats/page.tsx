@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { estimateReadMinutes } from '@/lib/validation';
 import StreakCard from '@/components/StreakCard';
 import GoalCard from '@/components/GoalCard';
+import ReadingHistoryCard from '@/components/ReadingHistoryCard';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,7 @@ export default async function StatsPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StreakCard />
           <GoalCard />
+          <ReadingHistoryCard />
           {stats.map((s) => (
             <div key={s.label} className="rounded-xl border bg-card p-5">
               <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">

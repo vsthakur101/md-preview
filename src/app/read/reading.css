@@ -1073,6 +1073,19 @@
   color: var(--reading-muted);
 }
 
+/* ---- Reduced motion: CSS transitions off (framer handled by MotionConfig) - */
+@media (prefers-reduced-motion: reduce) {
+  .reader-root[data-focus='on'] .article > *,
+  .reading-progress-fill,
+  .reading-toc-item,
+  .reading-icon-btn,
+  .aside-summary::before,
+  .reading-react-btn,
+  .reading-highlight {
+    transition: none !important;
+  }
+}
+
 /* ---- Print: just the article, paper-friendly ------------------------------ */
 @media print {
   .reading-progress-track,

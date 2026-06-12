@@ -5,6 +5,7 @@ import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import ThemeProvider from "@/components/ThemeProvider";
 import CommandPalette from "@/components/CommandPalette";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import MotionProvider from "@/components/MotionProvider";
 
 /*
  * Type roles (see theme spec): Display = Fraunces (headings, titles),
@@ -55,8 +56,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${jetbrainsMono.variable} ${fraunces.variable} ${newsreader.variable} antialiased`}
       >
         <ThemeProvider>
-          <SessionProviderWrapper>{children}</SessionProviderWrapper>
-          <CommandPalette />
+          <MotionProvider>
+            <SessionProviderWrapper>{children}</SessionProviderWrapper>
+            <CommandPalette />
+          </MotionProvider>
           <ServiceWorkerRegistration />
         </ThemeProvider>
       </body>
