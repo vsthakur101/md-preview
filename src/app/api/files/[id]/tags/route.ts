@@ -27,7 +27,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const { count } = await prisma.markdownFile.updateMany({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
       data: { tags: parsed.data.tags },
     });
     if (count === 0) {

@@ -8,7 +8,10 @@ const MAX_HIGHLIGHT_TEXT = 5000;
 const MAX_NOTE_LENGTH = 2000;
 
 function ownedFile(id: string, userId: string) {
-  return prisma.markdownFile.findFirst({ where: { id, userId }, select: { id: true } });
+  return prisma.markdownFile.findFirst({
+    where: { id, userId, deletedAt: null },
+    select: { id: true },
+  });
 }
 
 // GET — list the signed-in user's highlights for this file.

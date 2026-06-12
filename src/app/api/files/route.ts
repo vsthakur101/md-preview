@@ -33,9 +33,19 @@ export async function GET(request: NextRequest) {
   try {
     const q = request.nextUrl.searchParams.get('q')?.trim().slice(0, 200) ?? '';
 
+    // Lazy purge: permanently drop this user's soft-deleted files older than
+    // 30 days. Piggybacks on list fetches instead of needing a cron.
+    await prisma.markdownFile.deleteMany({
+      where: {
+        userId: session.user.id,
+        deletedAt: { lt: new Date(Date.now() - 30 * 86_400_000) },
+      },
+    });
+
     const files = await prisma.markdownFile.findMany({
       where: {
         userId: session.user.id,
+        deletedAt: null,
         ...(q
           ? {
               OR: [

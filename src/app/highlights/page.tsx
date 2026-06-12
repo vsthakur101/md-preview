@@ -22,7 +22,7 @@ export default async function HighlightsPage() {
   if (!session?.user?.id) redirect('/signin?callbackUrl=/highlights');
 
   const highlights = await prisma.highlight.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, file: { deletedAt: null } },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,

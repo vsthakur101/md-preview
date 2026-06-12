@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     const file = await prisma.markdownFile.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
       select: { shareId: true },
     });
     if (!file) {

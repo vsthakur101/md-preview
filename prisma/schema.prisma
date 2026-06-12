@@ -23,6 +23,8 @@ model MarkdownFile {
   pinned     Boolean           @default(false)
   // Normalized (lowercase, deduped) labels for library organization.
   tags       String[]          @default([])
+  // Soft delete: set on delete, cleared on restore, purged after 30 days.
+  deletedAt  DateTime?
   highlights Highlight[]
   reactions  Reaction[]
   progress   ReadingProgress[]

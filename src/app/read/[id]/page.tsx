@@ -16,7 +16,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
   }
 
   const file = await prisma.markdownFile.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, userId: session.user.id, deletedAt: null },
     select: { id: true, title: true, content: true, tags: true, shareId: true },
   });
   if (!file) notFound();
@@ -33,7 +33,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       select: { paragraph: true, type: true },
     }),
     prisma.markdownFile.findMany({
-      where: { userId: session.user.id, id: { not: file.id } },
+      where: { userId: session.user.id, id: { not: file.id }, deletedAt: null },
       select: { id: true, title: true, preview: true, content: true, tags: true },
       orderBy: { updatedAt: 'desc' },
       take: 12,

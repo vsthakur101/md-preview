@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     const file = await prisma.markdownFile.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
     });
 
     if (!file) {
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // file by guessing its id. `updateMany` returns a count instead of throwing
     // when no row matches the (id, userId) pair.
     const { count } = await prisma.markdownFile.updateMany({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
       data: { title, content, preview: buildPreview(content) },
     });
 
@@ -88,7 +88,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE file (only if it belongs to the signed-in user)
+// DELETE file — soft delete (only if it belongs to the signed-in user).
+// The row survives for 30 days (restorable via /restore), then GET purges it.
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const session = await auth();
 
@@ -103,9 +104,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     // Scope the delete to the owner so a user can never delete another
-    // user's file by guessing its id.
-    const { count } = await prisma.markdownFile.deleteMany({
-      where: { id, userId: session.user.id },
+    // user's file by guessing its id. Also revoke any public share link —
+    // a "deleted" file must stop being reachable immediately.
+    const { count } = await prisma.markdownFile.updateMany({
+      where: { id, userId: session.user.id, deletedAt: null },
+      data: { deletedAt: new Date(), shareId: null },
     });
 
     if (count === 0) {
@@ -115,7 +118,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, restorable: true });
   } catch (error) {
     console.error('Failed to delete file:', error);
     return NextResponse.json(

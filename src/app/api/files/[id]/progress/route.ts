@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Owner-only, same scope as the reader route.
     const file = await prisma.markdownFile.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
       select: { id: true },
     });
     if (!file) {
