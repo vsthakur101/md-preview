@@ -142,8 +142,33 @@ export default function LibraryPage() {
     return () => clearTimeout(timer);
   }, [fetchFiles]);
 
+  const [undoFile, setUndoFile] = useState<{ id: string; title: string } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Deletes are soft server-side; offer a 7s undo window.
   const handleDelete = (id: string) => {
+    const deleted = files.find((f) => f.id === id);
     setFiles((prev) => prev.filter((file) => file.id !== id));
+    if (deleted) {
+      setUndoFile({ id, title: deleted.title });
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+      undoTimer.current = setTimeout(() => setUndoFile(null), 7000);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!undoFile) return;
+    const target = undoFile;
+    setUndoFile(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    try {
+      const res = await fetch(`/api/files/${target.id}/restore`, { method: 'POST' });
+      if (!res.ok) throw new Error('Restore failed');
+      fetchFiles(true);
+    } catch (err) {
+      console.error('Undo error:', err);
+      setError('Could not restore the file.');
+    }
   };
 
   const handlePinToggle = (id: string, pinned: boolean) => {
@@ -416,6 +441,18 @@ export default function LibraryPage() {
           </div>
         )}
       </main>
+
+      {/* Soft-delete undo toast */}
+      {undoFile && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border bg-popover py-2 pl-4 pr-2 text-sm shadow-lg">
+          <span className="max-w-56 truncate">
+            Deleted <span className="font-medium">{undoFile.title}</span>
+          </span>
+          <Button size="sm" variant="secondary" onClick={handleUndo}>
+            Undo
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

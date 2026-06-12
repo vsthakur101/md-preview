@@ -16,8 +16,8 @@ export default async function SharePage({
 }) {
   const { shareId } = await params;
 
-  const file = await prisma.markdownFile.findUnique({
-    where: { shareId },
+  const file = await prisma.markdownFile.findFirst({
+    where: { shareId, deletedAt: null },
     select: { id: true, title: true, content: true },
   });
   if (!file) notFound();

@@ -55,7 +55,7 @@ describe('PATCH /api/files/[id]', () => {
     const res = await PATCH(patchReq(VALID), params('file-a'));
 
     expect(updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'file-a', userId: 'user-b' } })
+      expect.objectContaining({ where: { id: 'file-a', userId: 'user-b', deletedAt: null } })
     );
     expect(res.status).toBe(404);
   });
@@ -77,24 +77,34 @@ describe('DELETE /api/files/[id]', () => {
     auth.mockResolvedValue(null);
     const res = await DELETE(plainReq(), params('file-a'));
     expect(res.status).toBe(401);
-    expect(deleteMany).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
-  it('scopes the delete to the owner and 404s when nothing matches', async () => {
+  it('scopes the soft delete to the owner and 404s when nothing matches', async () => {
     auth.mockResolvedValue(SESSION_B);
-    deleteMany.mockResolvedValue({ count: 0 });
+    updateMany.mockResolvedValue({ count: 0 });
 
     const res = await DELETE(plainReq(), params('file-a'));
 
-    expect(deleteMany).toHaveBeenCalledWith({ where: { id: 'file-a', userId: 'user-b' } });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'file-a', userId: 'user-b', deletedAt: null },
+      data: { deletedAt: expect.any(Date), shareId: null },
+    });
     expect(res.status).toBe(404);
   });
 
-  it('deletes the file for the owner', async () => {
+  it('soft-deletes (sets deletedAt, revokes share) for the owner', async () => {
     auth.mockResolvedValue(SESSION_A);
-    deleteMany.mockResolvedValue({ count: 1 });
+    updateMany.mockResolvedValue({ count: 1 });
+
     const res = await DELETE(plainReq(), params('file-a'));
+
+    expect(deleteMany).not.toHaveBeenCalled(); // never a hard delete
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { deletedAt: expect.any(Date), shareId: null } })
+    );
     expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ success: true, restorable: true });
   });
 });
 
@@ -105,7 +115,9 @@ describe('GET /api/files/[id]', () => {
 
     const res = await GET(plainReq(), params('file-a'));
 
-    expect(findFirst).toHaveBeenCalledWith({ where: { id: 'file-a', userId: 'user-b' } });
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { id: 'file-a', userId: 'user-b', deletedAt: null },
+    });
     expect(res.status).toBe(404);
   });
 });

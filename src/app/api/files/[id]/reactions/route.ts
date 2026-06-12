@@ -7,7 +7,10 @@ type RouteParams = { params: Promise<{ id: string }> };
 const TYPES = new Set(['heart', 'idea']);
 
 function ownedFile(id: string, userId: string) {
-  return prisma.markdownFile.findFirst({ where: { id, userId }, select: { id: true } });
+  return prisma.markdownFile.findFirst({
+    where: { id, userId, deletedAt: null },
+    select: { id: true },
+  });
 }
 
 // GET — list the signed-in user's reactions for this file.

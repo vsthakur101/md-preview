@@ -395,7 +395,10 @@ export default function Reader({
             </svg>
           </button>
         )}
-        <span className="reading-chrome-title">{title}</span>
+        {/* Mid-article, the chrome shows where you are; the full title stays in the tooltip. */}
+        <span className="reading-chrome-title" title={title}>
+          {activeIndex >= 0 ? headings[activeIndex].text : title}
+        </span>
         <span className="reading-chrome-time">
           <span ref={timeRef}>{minutes} min left</span>
         </span>

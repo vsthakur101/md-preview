@@ -45,6 +45,20 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
     setSummary(null);
     const result: ImportSummary = { ok: 0, failed: [] };
 
+    // Duplicate guard: skip files whose title is already in the library
+    // (and dedupe within the batch itself).
+    const existingTitles = new Set<string>();
+    try {
+      const res = await fetch('/api/files');
+      if (res.ok) {
+        for (const f of (await res.json()) as { title: string }[]) {
+          existingTitles.add(f.title.trim().toLowerCase());
+        }
+      }
+    } catch {
+      /* no list, no dedupe — imports still proceed */
+    }
+
     for (const file of files) {
       if (!ACCEPTED.test(file.name)) {
         result.failed.push({ name: file.name, reason: 'not a .md file' });
@@ -63,6 +77,11 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
           continue;
         }
         const title = fmTitle?.slice(0, MAX_TITLE_LENGTH) || deriveTitle(file.name, content);
+        if (existingTitles.has(title.trim().toLowerCase())) {
+          result.failed.push({ name: file.name, reason: 'already in library' });
+          continue;
+        }
+        existingTitles.add(title.trim().toLowerCase());
         const res = await fetch('/api/files', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

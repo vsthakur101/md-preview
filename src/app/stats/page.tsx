@@ -26,7 +26,7 @@ export default async function StatsPage() {
 
   const [files, highlightCount, noteCount, reactionCount] = await Promise.all([
     prisma.markdownFile.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       select: {
         id: true,
         title: true,
@@ -34,9 +34,9 @@ export default async function StatsPage() {
         progress: { where: { userId }, select: { fraction: true } },
       },
     }),
-    prisma.highlight.count({ where: { userId } }),
-    prisma.highlight.count({ where: { userId, note: { not: null } } }),
-    prisma.reaction.count({ where: { userId } }),
+    prisma.highlight.count({ where: { userId, file: { deletedAt: null } } }),
+    prisma.highlight.count({ where: { userId, note: { not: null }, file: { deletedAt: null } } }),
+    prisma.reaction.count({ where: { userId, file: { deletedAt: null } } }),
   ]);
 
   // Synced positions only — a device that hasn't synced yet isn't counted.
