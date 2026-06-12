@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles } from 'lucide-react';
 import FileCard from '@/components/FileCard';
+import LibraryImport from '@/components/LibraryImport';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getInProgressReads, getStats, isFinished } from '@/lib/reading/progress-store';
+import { SAMPLE_TITLE, SAMPLE_CONTENT } from '@/lib/reading/sample-article';
 
 interface MarkdownFile {
   id: string;
@@ -43,6 +46,8 @@ export default function LibraryPage() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('newest');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [creatingSample, setCreatingSample] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetchFiles();
@@ -77,6 +82,25 @@ export default function LibraryPage() {
 
   const handleDelete = (id: string) => {
     setFiles((prev) => prev.filter((file) => file.id !== id));
+  };
+
+  // Seed the sample article and drop the user straight into the reader.
+  const handleAddSample = async () => {
+    setCreatingSample(true);
+    try {
+      const res = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: SAMPLE_TITLE, content: SAMPLE_CONTENT }),
+      });
+      if (!res.ok) throw new Error('Failed to create sample');
+      const file = await res.json();
+      router.push(`/read/${file.id}`);
+    } catch (err) {
+      console.error('Sample article error:', err);
+      setCreatingSample(false);
+      setError('Could not create the sample article. Please try again.');
+    }
   };
 
   const readState = useCallback(
@@ -157,8 +181,13 @@ export default function LibraryPage() {
 
         {/* Toolbar — shares the card surface system so it doesn't float on the canvas */}
         <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-3">
-          {/* Reading-state filter tabs */}
+          {/* Reading-state filter tabs + streak chip */}
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Filter by reading state">
+            {(reading?.streak ?? 0) > 0 && (
+              <span className="order-last ml-auto whitespace-nowrap text-meta font-medium text-muted-foreground">
+                🔥 {reading!.streak}-day streak
+              </span>
+            )}
             {FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -190,7 +219,8 @@ export default function LibraryPage() {
                 aria-label="Search files"
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <LibraryImport onImported={fetchFiles} />
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Sort
                 <select
@@ -222,7 +252,7 @@ export default function LibraryPage() {
             <Button onClick={fetchFiles}>Try Again</Button>
           </div>
         ) : files.length === 0 ? (
-          <EmptyState />
+          <EmptyState onAddSample={handleAddSample} creatingSample={creatingSample} />
         ) : visibleFiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Search className="mb-3 size-8 text-muted-foreground" />
@@ -303,7 +333,13 @@ function ContinueReadingBanner({
   );
 }
 
-function EmptyState() {
+function EmptyState({
+  onAddSample,
+  creatingSample,
+}: {
+  onAddSample: () => void;
+  creatingSample: boolean;
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
@@ -311,14 +347,21 @@ function EmptyState() {
       </div>
       <h2 className="mb-2 text-lg font-medium">No files yet</h2>
       <p className="mb-4 max-w-sm text-muted-foreground">
-        Start by creating a markdown file and saving it to your library.
+        Drop .md files anywhere on this page, create one from scratch — or take the
+        reader for a spin first.
       </p>
-      <Button asChild>
-        <Link href="/">
-          <Plus className="size-4" />
-          Create New File
-        </Link>
-      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button onClick={onAddSample} disabled={creatingSample}>
+          {creatingSample ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+          Try a sample article
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/">
+            <Plus className="size-4" />
+            Create New File
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
