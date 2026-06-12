@@ -179,6 +179,20 @@ body {
   box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.35);
 }
 
+/*
+ * Highlight color swatches (highlights hub). Mirrors the reader's
+ * .reading-highlight-* marks, which live in the route-scoped reading.css.
+ */
+.highlight-dot-yellow {
+  background: rgba(255, 214, 84, 0.85);
+}
+.highlight-dot-green {
+  background: rgba(122, 214, 130, 0.8);
+}
+.highlight-dot-blue {
+  background: rgba(120, 178, 246, 0.8);
+}
+
 /* Custom scrollbar styles */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
