@@ -22,14 +22,22 @@ export async function GET() {
         preview: true,
         createdAt: true,
         content: true,
+        pinned: true,
+        // The caller's server-synced reading position (cross-device resume).
+        progress: {
+          where: { userId: session.user.id },
+          select: { fraction: true, updatedAt: true },
+        },
       },
     });
 
     // Derive read time server-side; the content itself stays out of the payload.
     return NextResponse.json(
-      files.map(({ content, ...file }) => ({
+      files.map(({ content, progress, ...file }) => ({
         ...file,
         minutes: estimateReadMinutes(content),
+        serverFraction: progress[0]?.fraction ?? 0,
+        serverReadAt: progress[0]?.updatedAt ?? null,
       }))
     );
   } catch (error) {

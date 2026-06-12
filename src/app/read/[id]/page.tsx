@@ -21,7 +21,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
   });
   if (!file) notFound();
 
-  const [{ html, headings, minutes }, highlights, reactions, relatedFiles] = await Promise.all([
+  const [{ html, headings, minutes }, highlights, reactions, relatedFiles, progress] = await Promise.all([
     renderArticle(file.content),
     prisma.highlight.findMany({
       where: { fileId: file.id, userId: session.user.id },
@@ -37,6 +37,10 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       select: { id: true, title: true, preview: true, content: true },
       orderBy: { updatedAt: 'desc' },
       take: 2,
+    }),
+    prisma.readingProgress.findUnique({
+      where: { fileId_userId: { fileId: file.id, userId: session.user.id } },
+      select: { fraction: true },
     }),
   ]);
 
@@ -56,6 +60,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       initialHighlights={highlights}
       initialReactions={reactions}
       related={related}
+      initialServerFraction={progress?.fraction ?? 0}
     >
       <article
         id="article"

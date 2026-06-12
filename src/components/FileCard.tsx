@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, Trash2, Loader2, BookOpen, CheckCircle2 } from 'lucide-react';
+import { FileText, Trash2, Loader2, BookOpen, CheckCircle2, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -13,10 +13,12 @@ interface FileCardProps {
   preview: string;
   createdAt: string;
   minutes?: number;
-  /** Reading progress 0..1 (from localStorage; 0 = not started). */
+  /** Merged reading progress 0..1 (max of local and server; 0 = not started). */
   progress?: number;
   finished?: boolean;
+  pinned?: boolean;
   onDelete: (id: string) => void;
+  onPinToggle?: (id: string, pinned: boolean) => void;
 }
 
 /*
@@ -47,10 +49,13 @@ export default function FileCard({
   minutes,
   progress = 0,
   finished = false,
+  pinned = false,
   onDelete,
+  onPinToggle,
 }: FileCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isPinning, setIsPinning] = useState(false);
 
   const color = categoryColor(title);
   const inProgress = !finished && progress > 0.03 && progress < 0.97;
@@ -60,6 +65,23 @@ export default function FileCard({
     month: 'short',
     day: 'numeric',
   });
+
+  const handlePinToggle = async () => {
+    setIsPinning(true);
+    try {
+      const response = await fetch(`/api/files/${id}/pin`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinned: !pinned }),
+      });
+      if (!response.ok) throw new Error('Failed to update pin');
+      onPinToggle?.(id, !pinned);
+    } catch (error) {
+      console.error('Pin error:', error);
+    } finally {
+      setIsPinning(false);
+    }
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -144,7 +166,8 @@ export default function FileCard({
       <div
         className={cn(
           'absolute right-3 top-3 transition-opacity',
-          showConfirm ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'
+          // Pinned cards keep their pin visible; otherwise hover-reveal on desktop.
+          showConfirm || pinned ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'
         )}
       >
         {showConfirm ? (
@@ -157,18 +180,38 @@ export default function FileCard({
             </Button>
           </div>
         ) : (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-8 bg-background/80 text-muted-foreground backdrop-blur hover:text-destructive"
-            title="Delete"
-            onClick={(e) => {
-              e.preventDefault();
-              setShowConfirm(true);
-            }}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {onPinToggle && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  'size-8 bg-background/80 backdrop-blur',
+                  pinned ? 'text-primary hover:text-primary' : 'text-muted-foreground hover:text-primary'
+                )}
+                title={pinned ? 'Unpin' : 'Pin to top'}
+                disabled={isPinning}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handlePinToggle();
+                }}
+              >
+                <Pin className={cn('size-4', pinned && 'fill-current')} />
+              </Button>
+            )}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-8 bg-background/80 text-muted-foreground backdrop-blur hover:text-destructive"
+              title="Delete"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowConfirm(true);
+              }}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
         )}
       </div>
     </motion.div>
