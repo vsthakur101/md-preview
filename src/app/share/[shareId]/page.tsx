@@ -5,6 +5,11 @@ import Reader from '@/components/reading/Reader';
 
 export const dynamic = 'force-dynamic';
 
+// Share links are unlisted; keep them out of search indexes.
+export const metadata = {
+  robots: { index: false, follow: false },
+};
+
 /**
  * Public share link. Renders the full reading experience (typography, progress,
  * TOC, focus mode) in `publicView` mode — no auth, no highlight/reaction layers.

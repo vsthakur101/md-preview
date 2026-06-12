@@ -3,19 +3,12 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, Highlighter, BookOpen } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import CopyButton from '@/components/CopyButton';
-import DownloadTextButton from '@/components/DownloadTextButton';
+import HighlightsExplorer, { type ExplorerGroup } from '@/components/HighlightsExplorer';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 
 export const dynamic = 'force-dynamic';
-
-interface FileGroup {
-  fileId: string;
-  title: string;
-  highlights: { id: string; text: string; color: string; note: string | null; createdAt: Date }[];
-}
 
 export default async function HighlightsPage() {
   const session = await auth();
@@ -35,8 +28,8 @@ export default async function HighlightsPage() {
   });
 
   // Group by article, articles ordered by their most recent highlight.
-  const groups: FileGroup[] = [];
-  const byFile = new Map<string, FileGroup>();
+  const groups: ExplorerGroup[] = [];
+  const byFile = new Map<string, ExplorerGroup>();
   for (const h of highlights) {
     let group = byFile.get(h.file.id);
     if (!group) {
@@ -44,13 +37,7 @@ export default async function HighlightsPage() {
       byFile.set(h.file.id, group);
       groups.push(group);
     }
-    group.highlights.push({
-      id: h.id,
-      text: h.text,
-      color: h.color,
-      note: h.note,
-      createdAt: h.createdAt,
-    });
+    group.highlights.push({ id: h.id, text: h.text, color: h.color, note: h.note });
   }
 
   return (
@@ -78,79 +65,7 @@ export default async function HighlightsPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-4 sm:py-8">
-        {groups.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                {highlights.length} highlight{highlights.length === 1 ? '' : 's'} across{' '}
-                {groups.length} article{groups.length === 1 ? '' : 's'}
-              </p>
-              <DownloadTextButton
-                fileName="highlights.md"
-                label="Export all"
-                text={
-                  `# Highlights\n\n` +
-                  groups
-                    .map(
-                      (g) =>
-                        `## ${g.title}\n\n` +
-                        g.highlights
-                          .map((h) => (h.note ? `> ${h.text}\n>\n> — ${h.note}` : `> ${h.text}`))
-                          .join('\n\n')
-                    )
-                    .join('\n\n')
-                }
-              />
-            </div>
-            {groups.map((group) => (
-              <section key={group.fileId} className="rounded-xl border bg-card p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h2 className="min-w-0 truncate font-medium">{group.title}</h2>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <CopyButton
-                      text={group.highlights
-                        .map((h) => (h.note ? `> ${h.text}\n>\n> — ${h.note}` : `> ${h.text}`))
-                        .join('\n\n')}
-                      label="Copy all"
-                    />
-                    <Button asChild size="sm" variant="ghost" className="text-primary">
-                      <Link href={`/read/${group.fileId}`}>
-                        <BookOpen className="size-3.5" />
-                        Open
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-                <ul className="flex flex-col gap-3">
-                  {group.highlights.map((h) => (
-                    <li key={h.id} className="group flex items-start gap-3">
-                      <span
-                        aria-hidden
-                        className={`highlight-dot highlight-dot-${h.color} mt-1.5 size-3 shrink-0 rounded-sm`}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <blockquote className="font-serif italic leading-relaxed text-secondary-foreground">
-                          {h.text}
-                        </blockquote>
-                        {h.note && (
-                          <p className="mt-1.5 border-l-2 border-primary/40 pl-2.5 text-sm text-muted-foreground">
-                            {h.note}
-                          </p>
-                        )}
-                      </div>
-                      <CopyButton
-                        text={h.text}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        )}
+        {groups.length === 0 ? <EmptyState /> : <HighlightsExplorer groups={groups} />}
       </main>
     </div>
   );
