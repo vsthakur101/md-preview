@@ -65,6 +65,20 @@ export default function LibraryPage() {
   const router = useRouter();
 
   const hasLoadedRef = useRef(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // "/" focuses search (unless already typing somewhere).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const fetchFiles = useCallback(async (background = false) => {
     if (!background) setIsLoading(true);
@@ -311,9 +325,10 @@ export default function LibraryPage() {
             <div className="relative w-full sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search titles and content…"
+                placeholder="Search titles and content…  ( / )"
                 className="pl-9"
                 aria-label="Search files"
               />

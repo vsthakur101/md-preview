@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, Trash2, Loader2, BookOpen, CheckCircle2, Pin } from 'lucide-react';
+import { FileText, Trash2, Loader2, BookOpen, CheckCircle2, Pin, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TagEditor from '@/components/TagEditor';
+import { downloadMarkdown } from '@/lib/export-markdown';
 import { cn } from '@/lib/utils';
 
 interface FileCardProps {
@@ -75,6 +76,17 @@ export default function FileCard({
     month: 'short',
     day: 'numeric',
   });
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(`/api/files/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      const file = (await response.json()) as { title: string; content: string; tags?: string[] };
+      downloadMarkdown(file.title, file.tags ?? [], file.content);
+    } catch (error) {
+      console.error('Download error:', error);
+    }
+  };
 
   const handlePinToggle = async () => {
     setIsPinning(true);
@@ -208,6 +220,18 @@ export default function FileCard({
           </div>
         ) : (
           <div className="flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-8 bg-background/80 text-muted-foreground backdrop-blur hover:text-primary"
+              title="Download .md"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDownload();
+              }}
+            >
+              <Download className="size-4" />
+            </Button>
             {onTagsChange && (
               <TagEditor fileId={id} tags={tags} allTags={allTags} onTagsChange={onTagsChange} />
             )}
