@@ -4,6 +4,7 @@ import "./globals.css";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import ThemeProvider from "@/components/ThemeProvider";
 import CommandPalette from "@/components/CommandPalette";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 /*
  * Type roles (see theme spec): Display = Fraunces (headings, titles),
@@ -56,6 +57,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SessionProviderWrapper>{children}</SessionProviderWrapper>
           <CommandPalette />
+          <ServiceWorkerRegistration />
         </ThemeProvider>
       </body>
     </html>

@@ -926,6 +926,13 @@
   align-items: center;
   gap: 2px;
 }
+.reading-tts-rate {
+  width: auto;
+  padding: 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ---- Text-size (Aa) popover ---------------------------------------------- */
 .reading-textsize {
