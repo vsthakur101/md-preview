@@ -4,6 +4,23 @@ import { auth } from '@/auth';
 import { fileInputSchema, buildPreview, estimateReadMinutes } from '@/lib/validation';
 import { enforceWriteLimit } from '@/lib/ratelimit';
 
+/**
+ * Context snippet around the first content match, markdown punctuation
+ * stripped — shown on library cards in place of the generic preview.
+ */
+function buildSnippet(content: string, q: string): string | null {
+  const idx = content.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return null;
+  const start = Math.max(0, idx - 60);
+  const end = Math.min(content.length, idx + q.length + 90);
+  const raw = content
+    .slice(start, end)
+    .replace(/[#*`>\[\]()]/g, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+  return (start > 0 ? '…' : '') + raw + (end < content.length ? '…' : '');
+}
+
 // GET all files belonging to the signed-in user. Optional `?q=` searches
 // title AND full article content (case-insensitive).
 export async function GET(request: NextRequest) {
@@ -52,6 +69,7 @@ export async function GET(request: NextRequest) {
         minutes: estimateReadMinutes(content),
         serverFraction: progress[0]?.fraction ?? 0,
         serverReadAt: progress[0]?.updatedAt ?? null,
+        snippet: q ? buildSnippet(content, q) : null,
       }))
     );
   } catch (error) {

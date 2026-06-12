@@ -194,6 +194,35 @@
   height: auto;
   border-radius: 0.6rem;
   margin: 2.25rem 0;
+  cursor: zoom-in;
+}
+
+/* Click-to-zoom lightbox */
+.reading-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  background: color-mix(in srgb, var(--reading-bg) 25%, rgb(0 0 0 / 0.85));
+  cursor: zoom-out;
+}
+.reading-lightbox img {
+  max-width: min(92vw, 70rem);
+  max-height: 84vh;
+  border-radius: 0.5rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+.reading-lightbox-caption {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #f5f1e6;
+  text-align: center;
+  max-width: 60ch;
 }
 
 .article hr {
@@ -334,6 +363,26 @@
 }
 .article [data-highlighted-line] {
   background: color-mix(in srgb, var(--reading-accent) 10%, transparent);
+}
+
+/* ---- Footnotes (remark-gfm) ----------------------------------------------- */
+.article sup a[data-footnote-ref] {
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0 0.15em;
+}
+.article section[data-footnotes] {
+  margin-top: 3.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--reading-rule);
+  font-size: 0.9rem;
+  color: var(--reading-muted-strong);
+}
+.article section[data-footnotes] ol {
+  margin-bottom: 0;
+}
+.article section[data-footnotes] p {
+  margin-bottom: 0.6rem;
 }
 
 /* ---- Tables -------------------------------------------------------------- */

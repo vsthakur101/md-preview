@@ -60,6 +60,7 @@ export default function Reader({
   const [tocOpen, setTocOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
   const textSize = useTextSize();
   const readingTheme = useReadingTheme();
 
@@ -263,6 +264,18 @@ export default function Reader({
     };
   }, []);
 
+  // Image lightbox: click any article image to zoom.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const img = (e.target as HTMLElement).closest?.('#article img') as HTMLImageElement | null;
+      if (!img) return;
+      e.preventDefault();
+      setLightbox({ src: img.currentSrc || img.src, alt: img.alt });
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
+
   // Keyboard shortcuts: j/k section nav, f focus, t TOC, ? help, Esc closes.
   useEffect(() => {
     const jumpSection = (delta: 1 | -1) => {
@@ -297,7 +310,8 @@ export default function Reader({
           setHelpOpen((v) => !v);
           break;
         case 'Escape':
-          if (helpOpen) setHelpOpen(false);
+          if (lightbox) setLightbox(null);
+          else if (helpOpen) setHelpOpen(false);
           else if (tocOpen) setTocOpen(false);
           else if (focusRef.current) toggleFocus();
           break;
@@ -468,6 +482,26 @@ export default function Reader({
       )}
 
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      {/* Image lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            className="reading-lightbox"
+            role="dialog"
+            aria-label={lightbox.alt || 'Image'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setLightbox(null)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={lightbox.src} alt={lightbox.alt} />
+            {lightbox.alt && <p className="reading-lightbox-caption">{lightbox.alt}</p>}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Heading deep-link confirmation */}
       <AnimatePresence>

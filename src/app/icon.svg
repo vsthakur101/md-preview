@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Warm paper card -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#b87a2e"/>
+  <rect x="6" y="6" width="52" height="52" rx="11" fill="#faf8f2"/>
+  <!-- Text lines -->
+  <rect x="14" y="17" width="36" height="5" rx="2.5" fill="#2a2620"/>
+  <rect x="14" y="28" width="36" height="5" rx="2.5" fill="#7a7568"/>
+  <rect x="14" y="39" width="24" height="5" rx="2.5" fill="#7a7568"/>
+  <!-- Reading progress bar -->
+  <rect x="14" y="50" width="36" height="4" rx="2" fill="#e4dfd2"/>
+  <rect x="14" y="50" width="22" height="4" rx="2" fill="#b87a2e"/>
+</svg>

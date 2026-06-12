@@ -13,16 +13,18 @@ export function buildMarkdownExport(title: string, tags: string[], content: stri
 const safeFileName = (title: string) =>
   (title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'untitled') + '.md';
 
-export function downloadMarkdown(title: string, tags: string[], content: string): void {
-  const blob = new Blob([buildMarkdownExport(title, tags, content)], {
-    type: 'text/markdown;charset=utf-8',
-  });
+export function downloadTextFile(fileName: string, text: string): void {
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = safeFileName(title);
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+export function downloadMarkdown(title: string, tags: string[], content: string): void {
+  downloadTextFile(safeFileName(title), buildMarkdownExport(title, tags, content));
 }
