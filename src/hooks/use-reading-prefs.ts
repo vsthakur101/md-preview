@@ -83,3 +83,31 @@ export function setReadingTheme(theme: ReadingTheme): void {
 export function useReadingTheme(): ReadingTheme {
   return useSyncExternalStore(subscribe, getThemeSnapshot, () => 'default');
 }
+
+/* ---- Read-aloud speed ----------------------------------------------------- */
+
+const TTS_RATE_KEY = 'reading:prefs:tts-rate';
+
+export const TTS_RATES = [0.8, 1, 1.25, 1.5] as const;
+
+function getTtsRateSnapshot(): number {
+  try {
+    const v = parseFloat(window.localStorage.getItem(TTS_RATE_KEY) ?? '1');
+    return (TTS_RATES as readonly number[]).includes(v) ? v : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export function setTtsRate(rate: number): void {
+  try {
+    window.localStorage.setItem(TTS_RATE_KEY, String(rate));
+  } catch {
+    /* ignore */
+  }
+  listeners.forEach((cb) => cb());
+}
+
+export function useTtsRate(): number {
+  return useSyncExternalStore(subscribe, getTtsRateSnapshot, () => 1);
+}

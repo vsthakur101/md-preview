@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMounted } from '@/hooks/use-mounted';
+import { TTS_RATES, setTtsRate, useTtsRate } from '@/hooks/use-reading-prefs';
 
 type State = 'idle' | 'playing' | 'paused';
 
 export default function ReadAloud() {
   const mounted = useMounted();
   const [state, setState] = useState<State>('idle');
+  const rate = useTtsRate();
   const chunks = useRef<string[]>([]);
   const idx = useRef(0);
 
@@ -23,16 +25,18 @@ export default function ReadAloud() {
     mounted && typeof window !== 'undefined' && 'speechSynthesis' in window;
   if (!supported) return null;
 
-  const speakNext = () => {
+  // Rate is threaded explicitly so the utterance chain never closes over a
+  // stale render's value.
+  const speakFrom = (r: number) => {
     if (idx.current >= chunks.current.length) {
       setState('idle');
       return;
     }
     const u = new SpeechSynthesisUtterance(chunks.current[idx.current]);
-    u.rate = 1;
+    u.rate = r;
     u.onend = () => {
       idx.current += 1;
-      speakNext();
+      speakFrom(r);
     };
     window.speechSynthesis.speak(u);
   };
@@ -46,7 +50,19 @@ export default function ReadAloud() {
     idx.current = 0;
     window.speechSynthesis.cancel();
     setState('playing');
-    speakNext();
+    speakFrom(rate);
+  };
+
+  // Cycle 0.8× → 1× → 1.25× → 1.5×; mid-playback, restart the current
+  // paragraph at the new speed.
+  const cycleRate = () => {
+    const next = TTS_RATES[(TTS_RATES.indexOf(rate as (typeof TTS_RATES)[number]) + 1) % TTS_RATES.length];
+    setTtsRate(next);
+    if (state !== 'idle') {
+      window.speechSynthesis.cancel();
+      setState('playing');
+      speakFrom(next);
+    }
   };
 
   const toggle = () => {
@@ -86,11 +102,21 @@ export default function ReadAloud() {
         )}
       </button>
       {state !== 'idle' && (
-        <button className="reading-icon-btn" onClick={stop} aria-label="Stop read-aloud" title="Stop">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <rect x="6" y="6" width="12" height="12" rx="1.5" />
-          </svg>
-        </button>
+        <>
+          <button className="reading-icon-btn" onClick={stop} aria-label="Stop read-aloud" title="Stop">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="1.5" />
+            </svg>
+          </button>
+          <button
+            className="reading-icon-btn reading-tts-rate"
+            onClick={cycleRate}
+            aria-label={`Read-aloud speed ${rate}x, click to change`}
+            title="Speed"
+          >
+            {rate}×
+          </button>
+        </>
       )}
     </div>
   );

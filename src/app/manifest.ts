@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
 
 /**
- * Installable web-app manifest ("PWA-lite": no service worker / offline yet).
+ * Installable web-app manifest. Offline reading is handled by public/sw.js
+ * (network-first; previously-visited articles work offline).
  * Colors mirror the warm design tokens in globals.css.
  */
 export default function manifest(): MetadataRoute.Manifest {
