@@ -103,6 +103,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
+    // `?force=1` permanently purges — but only rows already in the trash, so
+    // a single request can never skip the soft-delete safety net.
+    if (request.nextUrl.searchParams.get('force') === '1') {
+      const { count } = await prisma.markdownFile.deleteMany({
+        where: { id, userId: session.user.id, deletedAt: { not: null } },
+      });
+      if (count === 0) {
+        return NextResponse.json({ error: 'File not found' }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, restorable: false });
+    }
+
     // Scope the delete to the owner so a user can never delete another
     // user's file by guessing its id. Also revoke any public share link —
     // a "deleted" file must stop being reachable immediately.

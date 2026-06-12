@@ -7,6 +7,7 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ['k'], action: 'Previous section' },
   { keys: ['f'], action: 'Toggle focus mode' },
   { keys: ['t'], action: 'Table of contents' },
+  { keys: ['n'], action: 'Next related read' },
   { keys: ['?'], action: 'Show this help' },
   { keys: ['Esc'], action: 'Close / exit focus' },
 ];
