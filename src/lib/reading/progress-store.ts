@@ -7,6 +7,8 @@
 const KEY = 'reading:stats:v1';
 const RECENT_KEY = 'reading:recent:v1';
 const POS_PREFIX = 'reading:pos:';
+const DAILY_KEY = 'reading:daily:v1';
+const GOAL_KEY = 'reading:goal';
 const RECENT_MAX = 20;
 
 export interface ReadingStats {
@@ -101,6 +103,62 @@ export function savePosition(fileId: string, fraction: number): void {
         .slice(0, RECENT_MAX)
     );
     window.localStorage.setItem(RECENT_KEY, JSON.stringify(trimmed));
+  } catch {
+    /* ignore */
+  }
+}
+
+/* ---- Daily reading minutes + goal (device-local, like the streak) ------- */
+
+interface DailyReading {
+  date: string; // YYYY-MM-DD
+  minutes: number;
+}
+
+function readDaily(): DailyReading {
+  try {
+    const raw = window.localStorage.getItem(DAILY_KEY);
+    const parsed = raw ? (JSON.parse(raw) as DailyReading) : null;
+    if (parsed && parsed.date === todayStr() && typeof parsed.minutes === 'number') {
+      return parsed;
+    }
+  } catch {
+    /* fall through */
+  }
+  return { date: todayStr(), minutes: 0 };
+}
+
+/** Credit (fractional) minutes of reading to today's bucket. */
+export function addReadingMinutes(minutes: number): void {
+  if (typeof window === 'undefined' || minutes <= 0) return;
+  const d = readDaily();
+  d.minutes += minutes;
+  try {
+    window.localStorage.setItem(DAILY_KEY, JSON.stringify(d));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getTodayReadingMinutes(): number {
+  if (typeof window === 'undefined') return 0;
+  return Math.round(readDaily().minutes);
+}
+
+/** Daily goal in minutes; 0 = no goal set. */
+export function getDailyGoal(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const v = parseInt(window.localStorage.getItem(GOAL_KEY) ?? '0', 10);
+    return Number.isFinite(v) && v > 0 ? Math.min(v, 600) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setDailyGoal(minutes: number): void {
+  try {
+    window.localStorage.setItem(GOAL_KEY, String(Math.max(0, Math.min(600, Math.round(minutes)))));
   } catch {
     /* ignore */
   }

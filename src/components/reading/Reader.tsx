@@ -11,8 +11,8 @@ import EndMatter, { type RelatedRead } from '@/components/reading/EndMatter';
 import TextSizeControl from '@/components/reading/TextSizeControl';
 import ShortcutsHelp from '@/components/reading/ShortcutsHelp';
 import { useMounted } from '@/hooks/use-mounted';
-import { useTextSize, textSizePx } from '@/hooks/use-reading-prefs';
-import { getPosition, savePosition } from '@/lib/reading/progress-store';
+import { useTextSize, textSizePx, useReadingTheme } from '@/hooks/use-reading-prefs';
+import { getPosition, savePosition, addReadingMinutes } from '@/lib/reading/progress-store';
 import type { ArticleHeading } from '@/lib/reading/markdown';
 
 interface ReaderProps {
@@ -57,6 +57,7 @@ export default function Reader({
   const [helpOpen, setHelpOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const textSize = useTextSize();
+  const readingTheme = useReadingTheme();
 
   const focusRef = useRef(false);
   const spotRef = useRef<Element | null>(null);
@@ -77,6 +78,11 @@ export default function Reader({
   const latestFracRef = useRef(0);
   const lastSyncAtRef = useRef(0);
   const lastSentRef = useRef(-1);
+
+  // Daily-goal credit baseline (null until the first save sets it, so a
+  // resume jump isn't credited) and the tab-title progress cache.
+  const creditFracRef = useRef<number | null>(null);
+  const titlePctRef = useRef(-1);
 
   // Focus mode: spotlight the block straddling ~40% of the viewport height.
   const applySpotlight = () => {
@@ -153,12 +159,29 @@ export default function Reader({
       }
       lastYRef.current = y;
 
+      // Mirror progress into the tab title (whole-percent granularity).
+      const pct = Math.round(frac * 100);
+      if (pct !== titlePctRef.current) {
+        titlePctRef.current = pct;
+        document.title = pct > 0 && pct < 100 ? `${pct}% · ${title}` : title;
+      }
+
       // Persist resume position + recency (debounced), syncing to the server
       // at most every SYNC_INTERVAL_MS.
       latestFracRef.current = frac;
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         savePosition(articleId, frac);
+
+        // Daily-goal credit: small forward deltas only, so TOC jumps and the
+        // resume scroll don't count as "minutes read".
+        const prev = creditFracRef.current;
+        creditFracRef.current = frac;
+        if (prev !== null) {
+          const delta = frac - prev;
+          if (delta > 0 && delta <= 0.15) addReadingMinutes(minutes * delta);
+        }
+
         if (Date.now() - lastSyncAtRef.current >= SYNC_INTERVAL_MS) {
           lastSyncAtRef.current = Date.now();
           syncProgress(frac);
@@ -185,8 +208,9 @@ export default function Reader({
       document.removeEventListener('visibilitychange', onPageHide);
       if (raf) cancelAnimationFrame(raf);
       if (saveTimer.current) clearTimeout(saveTimer.current);
+      document.title = title;
     };
-  }, [articleId, headings, minutes, publicView]);
+  }, [articleId, headings, minutes, publicView, title]);
 
   const scrollToFraction = (frac: number) => {
     const max = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -319,6 +343,7 @@ export default function Reader({
     <div
       className="reader-root"
       data-focus={focus ? 'on' : 'off'}
+      data-reading-theme={readingTheme}
       style={{ '--reading-size': `${textSizePx(textSize)}px` } as React.CSSProperties}
     >
       {/* Scroll progress bar */}

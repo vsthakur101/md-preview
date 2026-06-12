@@ -17,7 +17,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
 
   const file = await prisma.markdownFile.findFirst({
     where: { id, userId: session.user.id },
-    select: { id: true, title: true, content: true },
+    select: { id: true, title: true, content: true, tags: true },
   });
   if (!file) notFound();
 
@@ -34,9 +34,9 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
     }),
     prisma.markdownFile.findMany({
       where: { userId: session.user.id, id: { not: file.id } },
-      select: { id: true, title: true, preview: true, content: true },
+      select: { id: true, title: true, preview: true, content: true, tags: true },
       orderBy: { updatedAt: 'desc' },
-      take: 2,
+      take: 12,
     }),
     prisma.readingProgress.findUnique({
       where: { fileId_userId: { fileId: file.id, userId: session.user.id } },
@@ -44,12 +44,19 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
     }),
   ]);
 
-  const related = relatedFiles.map((f) => ({
-    id: f.id,
-    title: f.title,
-    hook: f.preview,
-    minutes: estimateReadMinutes(f.content),
-  }));
+  // "Keep reading" picks: most shared tags first, recency as the tiebreaker
+  // (the query is already newest-first and sort is stable).
+  const tagSet = new Set(file.tags);
+  const related = relatedFiles
+    .map((f) => ({ f, score: f.tags.filter((t) => tagSet.has(t)).length }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map(({ f }) => ({
+      id: f.id,
+      title: f.title,
+      hook: f.preview,
+      minutes: estimateReadMinutes(f.content),
+    }));
 
   return (
     <Reader

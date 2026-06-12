@@ -10,7 +10,14 @@ import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { getInProgressReads, getPosition, getStats, isFinished } from '@/lib/reading/progress-store';
+import {
+  getInProgressReads,
+  getPosition,
+  getStats,
+  isFinished,
+  getDailyGoal,
+  getTodayReadingMinutes,
+} from '@/lib/reading/progress-store';
 import { SAMPLE_TITLE, SAMPLE_CONTENT } from '@/lib/reading/sample-article';
 
 interface MarkdownFile {
@@ -31,6 +38,8 @@ interface ReadingState {
   finished: Record<string, boolean>;
   resumeId: string | null;
   streak: number;
+  todayMinutes: number;
+  goal: number;
 }
 
 type SortKey = 'newest' | 'oldest' | 'title';
@@ -91,7 +100,14 @@ export default function LibraryPage() {
           }
         }
       }
-      setReading({ progress, finished, resumeId, streak: getStats().streak });
+      setReading({
+        progress,
+        finished,
+        resumeId,
+        streak: getStats().streak,
+        todayMinutes: getTodayReadingMinutes(),
+        goal: getDailyGoal(),
+      });
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Failed to load files. Please try again.');
@@ -233,9 +249,15 @@ export default function LibraryPage() {
         <div className="mb-6 flex flex-col gap-3 rounded-xl border bg-card p-3">
           {/* Reading-state filter tabs + streak chip */}
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Filter by reading state">
-            {(reading?.streak ?? 0) > 0 && (
+            {((reading?.streak ?? 0) > 0 || (reading?.goal ?? 0) > 0) && (
               <span className="order-last ml-auto whitespace-nowrap text-meta font-medium text-muted-foreground">
-                🔥 {reading!.streak}-day streak
+                {(reading?.streak ?? 0) > 0 && <>🔥 {reading!.streak}-day streak</>}
+                {(reading?.streak ?? 0) > 0 && (reading?.goal ?? 0) > 0 && ' · '}
+                {(reading?.goal ?? 0) > 0 && (
+                  <span className={reading!.todayMinutes >= reading!.goal ? 'text-primary' : undefined}>
+                    {reading!.todayMinutes}/{reading!.goal}m today
+                  </span>
+                )}
               </span>
             )}
             {FILTERS.map((f) => (
