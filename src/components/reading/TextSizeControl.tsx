@@ -2,11 +2,24 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TEXT_SIZES, setTextSize, useTextSize } from '@/hooks/use-reading-prefs';
+import {
+  TEXT_SIZES,
+  setTextSize,
+  useTextSize,
+  setReadingTheme,
+  useReadingTheme,
+  type ReadingTheme,
+} from '@/hooks/use-reading-prefs';
 
-/** "Aa" chrome button + popover for the reader's text-size preference. */
+const READING_THEMES: { id: ReadingTheme; label: string; hint: string }[] = [
+  { id: 'default', label: 'Match app', hint: 'light / dark' },
+  { id: 'sepia', label: 'Sepia', hint: 'warm paper' },
+];
+
+/** "Aa" chrome button + popover for the reader's appearance preferences. */
 export default function TextSizeControl() {
   const size = useTextSize();
+  const theme = useReadingTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +88,25 @@ export default function TextSizeControl() {
                 </span>
                 {s.label}
                 <span className="reading-textsize-px">{s.px}px</span>
+              </button>
+            ))}
+
+            <div className="reading-textsize-divider" role="separator" />
+
+            {READING_THEMES.map((t) => (
+              <button
+                key={t.id}
+                role="menuitemradio"
+                aria-checked={theme === t.id}
+                className={`reading-textsize-opt${theme === t.id ? ' is-active' : ''}`}
+                onClick={() => setReadingTheme(t.id)}
+              >
+                <span
+                  className={`reading-theme-swatch reading-theme-swatch-${t.id}`}
+                  aria-hidden
+                />
+                {t.label}
+                <span className="reading-textsize-px">{t.hint}</span>
               </button>
             ))}
           </motion.div>

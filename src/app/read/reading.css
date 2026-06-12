@@ -33,6 +33,34 @@
   background: var(--accent-muted);
 }
 
+/*
+ * Sepia reading theme: overrides the --reading-* aliases only, so it wins over
+ * both light and dark app themes while leaving the rest of the app untouched.
+ * Classic warm-paper palette tuned for the amber brand accent.
+ */
+.reader-root[data-reading-theme='sepia'] {
+  --reading-bg: #f4ecd8;
+  --reading-text: #433422;
+  --reading-muted: #8a7a5f;
+  --reading-muted-strong: #6b5b44;
+  --reading-accent: #9c6418;
+  --reading-accent-strong: #7e4f10;
+  --reading-rule: #e0d3b4;
+  --reading-card: #faf3e0;
+  --reading-card-border: #e0d3b4;
+  --reading-inline-code: #ece1c6;
+  --reading-code-bg: #efe5cc;
+  color-scheme: light;
+}
+.reader-root[data-reading-theme='sepia'] ::selection {
+  background: #e8d9b4;
+}
+/* Shiki dual-theme: sepia always reads the light token colors. */
+.dark .reader-root[data-reading-theme='sepia'] .article code[data-theme] span,
+.dark .reader-root[data-reading-theme='sepia'] .article pre[data-theme] code span {
+  color: var(--shiki-light);
+}
+
 /* ---- The article: measure-capped, serif, generous rhythm ----------------
    Type ramp (20px base): body 20/1.7, lead 22/1.6, H1 40/1.15, H2 28/1.25,
    H3 22/1.35. Body = Newsreader; headings/quotes = Fraunces (Display). */
@@ -909,6 +937,25 @@
   font-size: 0.7rem;
   color: var(--reading-muted);
   font-variant-numeric: tabular-nums;
+}
+.reading-textsize-divider {
+  height: 1px;
+  background: var(--reading-rule);
+  margin: 0.35rem 0.25rem;
+}
+.reading-theme-swatch {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 1px solid var(--reading-card-border);
+  margin: 0 0.12rem;
+}
+.reading-theme-swatch-default {
+  background: linear-gradient(135deg, #faf8f2 50%, #14130f 50%);
+}
+.reading-theme-swatch-sepia {
+  background: #f4ecd8;
+  border-color: #c9b88e;
 }
 
 /* ---- Keyboard shortcuts overlay ------------------------------------------ */
