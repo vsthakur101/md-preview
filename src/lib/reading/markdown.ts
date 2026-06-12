@@ -93,6 +93,16 @@ function remarkCollectHeadings(collector: { headings: any[]; words: number }) {
         const id = slugger.slug(text) || `section-${collector.headings.length + 1}`;
         node.data = node.data || {};
         node.data.hProperties = { ...(node.data.hProperties || {}), id };
+        // Hover-revealed anchor; the reader intercepts clicks to copy the deep
+        // link. The "#" glyph is CSS-drawn so it stays out of textContent (TTS).
+        node.children.push({
+          type: 'link',
+          url: `#${id}`,
+          data: {
+            hProperties: { className: ['heading-anchor'], ariaLabel: 'Copy link to section' },
+          },
+          children: [],
+        });
         current = { id, text, depth: node.depth, words: 0 };
         collector.headings.push(current);
       } else if (current) {
