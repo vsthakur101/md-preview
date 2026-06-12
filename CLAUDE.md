@@ -80,6 +80,6 @@ npx prisma db push   # apply schema changes (no migration history in this repo)
 ## Gotchas
 
 - The dev DB tracks `feat/reading-platform`'s schema (`shareId`, `MarkdownFile.pinned`,
-  `ReadingProgress` table); `main`'s schema may lag behind it. Reconcile before
-  `prisma db push` from a fresh branch.
+  `MarkdownFile.tags`, `Highlight.note`, `ReadingProgress` table); `main`'s schema
+  may lag behind it. Reconcile before `prisma db push` from a fresh branch.
 - `MarkdownFile.userId` is required (`NOT NULL`); new rows must set it.

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         content: true,
         pinned: true,
+        tags: true,
         // The caller's server-synced reading position (cross-device resume).
         progress: {
           where: { userId: session.user.id },
@@ -83,13 +84,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, content } = parsed.data;
+    const { title, content, tags } = parsed.data;
 
     const file = await prisma.markdownFile.create({
       data: {
         title,
         content,
         preview: buildPreview(content),
+        tags: tags ?? [],
         userId: session.user.id,
       },
     });
