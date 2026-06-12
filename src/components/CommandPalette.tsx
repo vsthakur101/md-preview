@@ -10,16 +10,27 @@ import {
   LibraryBig,
   SunMoon,
   FileText,
+  BookOpen,
+  Highlighter,
 } from 'lucide-react';
+import { getInProgressReads } from '@/lib/reading/progress-store';
 
 interface FileItem {
   id: string;
   title: string;
+  minutes?: number;
+}
+
+interface ResumeItem {
+  id: string;
+  title: string;
+  pct: number;
 }
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [resume, setResume] = useState<ResumeItem | null>(null);
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -42,7 +53,19 @@ export default function CommandPalette() {
     fetch('/api/files')
       .then((r) => (r.ok ? r.json() : []))
       .then((data: FileItem[]) => {
-        if (active) setFiles(data);
+        if (!active) return;
+        setFiles(data);
+        // Most recent unfinished read that still exists in the library.
+        const candidate = getInProgressReads().find((r) => data.some((f) => f.id === r.id));
+        setResume(
+          candidate
+            ? {
+                id: candidate.id,
+                title: data.find((f) => f.id === candidate.id)?.title ?? '',
+                pct: Math.round(candidate.fraction * 100),
+              }
+            : null
+        );
       })
       .catch(() => {});
     return () => {
@@ -81,6 +104,21 @@ export default function CommandPalette() {
             No results found.
           </Command.Empty>
 
+          {resume && (
+            <Command.Group
+              heading="Continue reading"
+              className="px-1 py-1 text-xs text-muted-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
+            >
+              <Item
+                value={`continue ${resume.title}`}
+                onSelect={() => run(() => router.push(`/read/${resume.id}`))}
+                icon={BookOpen}
+              >
+                {resume.title} · {resume.pct}% read
+              </Item>
+            </Command.Group>
+          )}
+
           <Command.Group
             heading="Actions"
             className="px-1 py-1 text-xs text-muted-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
@@ -90,6 +128,9 @@ export default function CommandPalette() {
             </Item>
             <Item onSelect={() => run(() => router.push('/library'))} icon={LibraryBig}>
               Go to Library
+            </Item>
+            <Item onSelect={() => run(() => router.push('/highlights'))} icon={Highlighter}>
+              My highlights
             </Item>
             <Item
               onSelect={() =>
@@ -103,17 +144,18 @@ export default function CommandPalette() {
 
           {files.length > 0 && (
             <Command.Group
-              heading="Files"
+              heading="Read"
               className="px-1 py-1 text-xs text-muted-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
             >
               {files.map((file) => (
                 <Item
                   key={file.id}
-                  value={`file ${file.title}`}
-                  onSelect={() => run(() => router.push(`/library/${file.id}`))}
+                  value={`read ${file.title}`}
+                  onSelect={() => run(() => router.push(`/read/${file.id}`))}
                   icon={FileText}
                 >
                   {file.title}
+                  {file.minutes ? ` · ${file.minutes} min` : ''}
                 </Item>
               ))}
             </Command.Group>

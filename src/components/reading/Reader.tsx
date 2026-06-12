@@ -23,6 +23,11 @@ interface ReaderProps {
   initialHighlights: InitialHighlight[];
   initialReactions: InitialReaction[];
   related: RelatedRead[];
+  /**
+   * Anonymous share-link mode: same typography/progress/TOC experience, but no
+   * account-coupled layers (highlights, reactions, end matter) and no back link.
+   */
+  publicView?: boolean;
   children: React.ReactNode; // server-rendered <article>
 }
 
@@ -34,6 +39,7 @@ export default function Reader({
   initialHighlights,
   initialReactions,
   related,
+  publicView = false,
   children,
 }: ReaderProps) {
   const fillRef = useRef<HTMLDivElement>(null);
@@ -43,6 +49,7 @@ export default function Reader({
   const [focus, setFocus] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const textSize = useTextSize();
 
   const focusRef = useRef(false);
@@ -159,6 +166,32 @@ export default function Reader({
     }
   };
 
+  // Heading anchors: clicking the "#" copies the section's deep link.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onClick = async (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest?.('a.heading-anchor');
+      if (!anchor) return;
+      e.preventDefault();
+      const url = new URL(window.location.href);
+      url.hash = anchor.getAttribute('href') ?? '';
+      try {
+        await navigator.clipboard.writeText(url.toString());
+        setLinkCopied(true);
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => setLinkCopied(false), 1500);
+      } catch {
+        /* clipboard unavailable — fall back to plain hash navigation */
+        window.location.hash = url.hash;
+      }
+    };
+    document.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('click', onClick);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   // Keyboard shortcuts: j/k section nav, f focus, t TOC, ? help, Esc closes.
   useEffect(() => {
     const jumpSection = (delta: 1 | -1) => {
@@ -257,11 +290,13 @@ export default function Reader({
         animate={{ y: chromeHidden ? '-110%' : '0%' }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
       >
-        <Link href={`/library/${articleId}`} className="reading-chrome-back" aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Link>
+        {!publicView && (
+          <Link href={`/library/${articleId}`} className="reading-chrome-back" aria-label="Back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        )}
         {headings.length > 1 && (
           <button
             className="reading-icon-btn reading-toc-toggle"
@@ -305,11 +340,13 @@ export default function Reader({
 
         <main className="reading-main">
           {children}
-          <EndMatter
-            articleId={articleId}
-            related={related}
-            highlights={initialHighlights.map((h) => ({ id: h.id, text: h.text, color: h.color }))}
-          />
+          {!publicView && (
+            <EndMatter
+              articleId={articleId}
+              related={related}
+              highlights={initialHighlights.map((h) => ({ id: h.id, text: h.text, color: h.color }))}
+            />
+          )}
         </main>
       </div>
 
@@ -342,11 +379,30 @@ export default function Reader({
         )}
       </AnimatePresence>
 
-      {/* Investment layers (Phase 4) */}
-      <HighlightLayer articleId={articleId} initial={initialHighlights} />
-      <ReactionLayer articleId={articleId} initial={initialReactions} />
+      {/* Investment layers (Phase 4) — owner only; the APIs are auth-scoped */}
+      {!publicView && (
+        <>
+          <HighlightLayer articleId={articleId} initial={initialHighlights} />
+          <ReactionLayer articleId={articleId} initial={initialReactions} />
+        </>
+      )}
 
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      {/* Heading deep-link confirmation */}
+      <AnimatePresence>
+        {linkCopied && (
+          <motion.div
+            className="reading-toast"
+            initial={{ y: 16, opacity: 0, x: '-50%' }}
+            animate={{ y: 0, opacity: 1, x: '-50%' }}
+            exit={{ y: 16, opacity: 0, x: '-50%' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            Link copied
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Auto-resume */}
       <AnimatePresence>
