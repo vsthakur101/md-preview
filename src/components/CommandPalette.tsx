@@ -12,6 +12,7 @@ import {
   FileText,
   BookOpen,
   Highlighter,
+  BarChart3,
 } from 'lucide-react';
 import { getInProgressReads } from '@/lib/reading/progress-store';
 
@@ -131,6 +132,9 @@ export default function CommandPalette() {
             </Item>
             <Item onSelect={() => run(() => router.push('/highlights'))} icon={Highlighter}>
               My highlights
+            </Item>
+            <Item onSelect={() => run(() => router.push('/stats'))} icon={BarChart3}>
+              Reading stats
             </Item>
             <Item
               onSelect={() =>
