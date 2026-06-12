@@ -958,6 +958,109 @@
   border-color: #c9b88e;
 }
 
+/* ---- Share / export popover ---------------------------------------------- */
+.reading-share {
+  position: relative;
+  display: flex;
+}
+.reading-share-pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 75;
+  min-width: 13rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem;
+  background: var(--reading-card);
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.7rem;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
+}
+.reading-share-opt {
+  padding: 0.45rem 0.6rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--reading-muted-strong);
+  text-align: left;
+}
+.reading-share-opt:hover {
+  background: var(--reading-inline-code);
+  color: var(--reading-text);
+}
+.reading-share-opt:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.reading-share-revoke {
+  color: color-mix(in srgb, var(--cat-security) 80%, var(--reading-text));
+}
+.reading-share-url {
+  padding: 0 0.6rem 0.3rem;
+  font-size: 0.72rem;
+  color: var(--reading-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.reading-share-hint {
+  padding: 0.35rem 0.6rem 0.25rem;
+  border-top: 1px solid var(--reading-rule);
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--reading-muted);
+}
+
+/* ---- Print: just the article, paper-friendly ------------------------------ */
+@media print {
+  .reading-progress-track,
+  .reading-chrome,
+  .reading-toc,
+  .reading-toc-drawer,
+  .reading-resume,
+  .reading-toast,
+  .reading-endmatter,
+  .reading-hl-pop,
+  .reading-note-pop,
+  .reading-react,
+  .reading-shortcuts {
+    display: none !important;
+  }
+  .reader-root {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .reading-layout:has(> .reading-toc) {
+    display: block;
+    padding: 0;
+  }
+  .reading-main {
+    padding: 0;
+  }
+  .article {
+    max-width: 100%;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+  }
+  .article .heading-anchor {
+    display: none;
+  }
+  /* Focus-mode dimming must not leak onto paper. */
+  .reader-root[data-focus='on'] .article > * {
+    opacity: 1 !important;
+  }
+  .article a {
+    color: #000;
+  }
+}
+
 /* ---- Keyboard shortcuts overlay ------------------------------------------ */
 .reading-shortcuts {
   position: fixed;

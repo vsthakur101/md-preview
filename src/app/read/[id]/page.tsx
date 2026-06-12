@@ -17,7 +17,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
 
   const file = await prisma.markdownFile.findFirst({
     where: { id, userId: session.user.id },
-    select: { id: true, title: true, content: true, tags: true },
+    select: { id: true, title: true, content: true, tags: true, shareId: true },
   });
   if (!file) notFound();
 
@@ -68,6 +68,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
       initialReactions={reactions}
       related={related}
       initialServerFraction={progress?.fraction ?? 0}
+      initialShareId={file.shareId}
     >
       <article
         id="article"

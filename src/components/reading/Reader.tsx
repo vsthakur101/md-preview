@@ -9,6 +9,7 @@ import ReactionLayer, { type InitialReaction } from '@/components/reading/Reacti
 import ReadAloud from '@/components/reading/ReadAloud';
 import EndMatter, { type RelatedRead } from '@/components/reading/EndMatter';
 import TextSizeControl from '@/components/reading/TextSizeControl';
+import ReaderShare from '@/components/reading/ReaderShare';
 import ShortcutsHelp from '@/components/reading/ShortcutsHelp';
 import { useMounted } from '@/hooks/use-mounted';
 import { useTextSize, textSizePx, useReadingTheme } from '@/hooks/use-reading-prefs';
@@ -30,6 +31,8 @@ interface ReaderProps {
   publicView?: boolean;
   /** Server-synced scroll fraction (cross-device resume); 0 when none. */
   initialServerFraction?: number;
+  /** Existing public share id, if the owner already shared this article. */
+  initialShareId?: string | null;
   children: React.ReactNode; // server-rendered <article>
 }
 
@@ -46,6 +49,7 @@ export default function Reader({
   related,
   publicView = false,
   initialServerFraction = 0,
+  initialShareId = null,
   children,
 }: ReaderProps) {
   const fillRef = useRef<HTMLDivElement>(null);
@@ -382,6 +386,9 @@ export default function Reader({
           <span ref={timeRef}>{minutes} min left</span>
         </span>
         <ReadAloud />
+        {!publicView && (
+          <ReaderShare articleId={articleId} title={title} initialShareId={initialShareId} />
+        )}
         <TextSizeControl />
         <button
           className={`reading-icon-btn${focus ? ' is-active' : ''}`}
