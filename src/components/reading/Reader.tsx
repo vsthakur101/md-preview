@@ -28,8 +28,13 @@ interface ReaderProps {
    * account-coupled layers (highlights, reactions, end matter) and no back link.
    */
   publicView?: boolean;
+  /** Server-synced scroll fraction (cross-device resume); 0 when none. */
+  initialServerFraction?: number;
   children: React.ReactNode; // server-rendered <article>
 }
+
+/** Min interval between server progress syncs while scrolling. */
+const SYNC_INTERVAL_MS = 15_000;
 
 export default function Reader({
   articleId,
@@ -40,6 +45,7 @@ export default function Reader({
   initialReactions,
   related,
   publicView = false,
+  initialServerFraction = 0,
   children,
 }: ReaderProps) {
   const fillRef = useRef<HTMLDivElement>(null);
@@ -55,8 +61,9 @@ export default function Reader({
   const focusRef = useRef(false);
   const spotRef = useRef<Element | null>(null);
 
-  // Resume: read once on the client; gate display until mounted (no SSR mismatch).
-  const [savedFraction] = useState(() => getPosition(articleId));
+  // Resume: the furthest of this device's position and the server-synced one;
+  // read once on the client, gated until mounted (no SSR mismatch).
+  const [savedFraction] = useState(() => Math.max(getPosition(articleId), initialServerFraction));
   const mounted = useMounted();
   const [resumeDismissed, setResumeDismissed] = useState(false);
 
@@ -64,6 +71,12 @@ export default function Reader({
   const chromeRef = useRef(false);
   const lastYRef = useRef(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Server progress sync (cross-device resume): throttled while scrolling,
+  // flushed on pagehide. Delta gate avoids no-op PUTs.
+  const latestFracRef = useRef(0);
+  const lastSyncAtRef = useRef(0);
+  const lastSentRef = useRef(-1);
 
   // Focus mode: spotlight the block straddling ~40% of the viewport height.
   const applySpotlight = () => {
@@ -88,6 +101,19 @@ export default function Reader({
   useEffect(() => {
     const headingEls = headings.map((h) => document.getElementById(h.id));
     let raf = 0;
+
+    const syncProgress = (frac: number, keepalive = false) => {
+      if (publicView || Math.abs(frac - lastSentRef.current) < 0.01) return;
+      lastSentRef.current = frac;
+      fetch(`/api/files/${articleId}/progress`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fraction: frac }),
+        keepalive,
+      }).catch(() => {
+        /* offline / transient — localStorage still has the position */
+      });
+    };
 
     const update = () => {
       raf = 0;
@@ -127,23 +153,40 @@ export default function Reader({
       }
       lastYRef.current = y;
 
-      // Persist resume position + recency (debounced).
+      // Persist resume position + recency (debounced), syncing to the server
+      // at most every SYNC_INTERVAL_MS.
+      latestFracRef.current = frac;
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => savePosition(articleId, frac), 400);
+      saveTimer.current = setTimeout(() => {
+        savePosition(articleId, frac);
+        if (Date.now() - lastSyncAtRef.current >= SYNC_INTERVAL_MS) {
+          lastSyncAtRef.current = Date.now();
+          syncProgress(frac);
+        }
+      }, 400);
     };
 
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
 
+    // Final flush when the tab is hidden or closed (keepalive survives unload).
+    const onPageHide = () => {
+      if (document.visibilityState === 'hidden') syncProgress(latestFracRef.current, true);
+    };
+
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('pagehide', onPageHide);
+    document.addEventListener('visibilitychange', onPageHide);
     update();
     return () => {
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('pagehide', onPageHide);
+      document.removeEventListener('visibilitychange', onPageHide);
       if (raf) cancelAnimationFrame(raf);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [articleId, headings, minutes]);
+  }, [articleId, headings, minutes, publicView]);
 
   const scrollToFraction = (frac: number) => {
     const max = document.documentElement.scrollHeight - document.documentElement.clientHeight;

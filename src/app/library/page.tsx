@@ -10,7 +10,7 @@ import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { getInProgressReads, getStats, isFinished } from '@/lib/reading/progress-store';
+import { getInProgressReads, getPosition, getStats, isFinished } from '@/lib/reading/progress-store';
 import { SAMPLE_TITLE, SAMPLE_CONTENT } from '@/lib/reading/sample-article';
 
 interface MarkdownFile {
@@ -19,6 +19,10 @@ interface MarkdownFile {
   preview: string;
   createdAt: string;
   minutes?: number;
+  pinned?: boolean;
+  /** Server-synced reading position (cross-device). */
+  serverFraction?: number;
+  serverReadAt?: string | null;
 }
 
 interface ReadingState {
@@ -62,16 +66,30 @@ export default function LibraryPage() {
       const data: MarkdownFile[] = await response.json();
       setFiles(data);
 
-      // Reading state lives in localStorage; snapshot it alongside the fetch
-      // (post-mount, so there's no SSR/hydration concern).
-      const inProgress = getInProgressReads();
-      const ids = new Set(data.map((f) => f.id));
-      setReading({
-        progress: Object.fromEntries(inProgress.map((r) => [r.id, r.fraction])),
-        finished: Object.fromEntries(data.map((f) => [f.id, isFinished(f.id)])),
-        resumeId: inProgress.find((r) => ids.has(r.id))?.id ?? null,
-        streak: getStats().streak,
-      });
+      // Merge per-file progress: the furthest of this device's localStorage
+      // position and the server-synced one (cross-device). Snapshotted
+      // alongside the fetch (post-mount, so there's no SSR/hydration concern).
+      const localRecency = new Map(getInProgressReads().map((r) => [r.id, r.at]));
+      const progress: Record<string, number> = {};
+      const finished: Record<string, boolean> = {};
+      let resumeId: string | null = null;
+      let resumeAt = -1;
+      for (const f of data) {
+        const eff = Math.max(getPosition(f.id), f.serverFraction ?? 0);
+        progress[f.id] = eff;
+        finished[f.id] = isFinished(f.id) || eff >= 0.97;
+        if (!finished[f.id] && eff > 0.03 && eff < 0.97) {
+          const at = Math.max(
+            localRecency.get(f.id) ?? 0,
+            f.serverReadAt ? Date.parse(f.serverReadAt) : 0
+          );
+          if (at > resumeAt) {
+            resumeAt = at;
+            resumeId = f.id;
+          }
+        }
+      }
+      setReading({ progress, finished, resumeId, streak: getStats().streak });
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Failed to load files. Please try again.');
@@ -82,6 +100,10 @@ export default function LibraryPage() {
 
   const handleDelete = (id: string) => {
     setFiles((prev) => prev.filter((file) => file.id !== id));
+  };
+
+  const handlePinToggle = (id: string, pinned: boolean) => {
+    setFiles((prev) => prev.map((file) => (file.id === id ? { ...file, pinned } : file)));
   };
 
   // Seed the sample article and drop the user straight into the reader.
@@ -132,6 +154,9 @@ export default function LibraryPage() {
     }
 
     const sorted = [...filtered].sort((a, b) => {
+      // Pinned files always lead, regardless of the chosen sort.
+      const pinDiff = Number(b.pinned ?? false) - Number(a.pinned ?? false);
+      if (pinDiff !== 0) return pinDiff;
       if (sort === 'title') return a.title.localeCompare(b.title);
       const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       return sort === 'newest' ? diff : -diff;
@@ -280,7 +305,9 @@ export default function LibraryPage() {
                 minutes={file.minutes}
                 progress={reading?.progress[file.id] ?? 0}
                 finished={reading?.finished[file.id] ?? false}
+                pinned={file.pinned ?? false}
                 onDelete={handleDelete}
+                onPinToggle={handlePinToggle}
               />
             ))}
           </div>

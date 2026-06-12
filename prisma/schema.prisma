@@ -11,18 +11,21 @@ datasource db {
 }
 
 model MarkdownFile {
-  id         String      @id @default(cuid())
+  id         String            @id @default(cuid())
   title      String
-  content    String      @db.Text
+  content    String            @db.Text
   preview    String
   userId     String
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Null = private. When set, the file is publicly viewable at /share/{shareId}.
-  shareId    String?     @unique
+  shareId    String?           @unique
+  // Pinned files surface first in the library.
+  pinned     Boolean           @default(false)
   highlights Highlight[]
   reactions  Reaction[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  progress   ReadingProgress[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   @@index([userId])
 }
@@ -45,6 +48,21 @@ model Highlight {
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([fileId, userId])
+}
+
+// Server-synced scroll position (0..1) so reading resumes across devices.
+// localStorage remains the fast path; this is the durable copy.
+model ReadingProgress {
+  id        String       @id @default(cuid())
+  fileId    String
+  userId    String
+  fraction  Float        @default(0)
+  updatedAt DateTime     @updatedAt
+  file      MarkdownFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, userId])
+  @@index([userId])
 }
 
 model Reaction {
@@ -76,6 +94,7 @@ model User {
   files         MarkdownFile[]
   highlights    Highlight[]
   reactions     Reaction[]
+  progress      ReadingProgress[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }

@@ -79,6 +79,7 @@ npx prisma db push   # apply schema changes (no migration history in this repo)
 
 ## Gotchas
 
-- The Neon DB currently has a `shareId` column from a feature branch; `main`'s
-  schema may not list it. Reconcile before `prisma db push` from a fresh branch.
+- The dev DB tracks `feat/reading-platform`'s schema (`shareId`, `MarkdownFile.pinned`,
+  `ReadingProgress` table); `main`'s schema may lag behind it. Reconcile before
+  `prisma db push` from a fresh branch.
 - `MarkdownFile.userId` is required (`NOT NULL`); new rows must set it.
