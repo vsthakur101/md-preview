@@ -219,13 +219,17 @@ export default function Reader({
     };
   }, [articleId, headings, minutes, publicView, title]);
 
+  // Respect prefers-reduced-motion for programmatic scrolls too.
+  const scrollBehavior = (): ScrollBehavior =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
   const scrollToFraction = (frac: number) => {
     const max = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    window.scrollTo({ top: frac * max, behavior: 'smooth' });
+    window.scrollTo({ top: frac * max, behavior: scrollBehavior() });
   };
 
   const scrollToId = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior() });
   };
 
   const toggleFocus = () => {
@@ -283,11 +287,11 @@ export default function Reader({
     const jumpSection = (delta: 1 | -1) => {
       const next = Math.min(headings.length - 1, Math.max(0, activeRef.current + delta));
       if (next === activeRef.current && delta === -1) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: scrollBehavior() });
         return;
       }
       const id = headings[next]?.id;
-      if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      if (id) document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior() });
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
