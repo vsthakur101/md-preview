@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles, BarChart3 } from 'lucide-react';
 import FileCard from '@/components/FileCard';
 import LibraryImport from '@/components/LibraryImport';
 import UserMenu from '@/components/UserMenu';
@@ -53,15 +53,15 @@ export default function LibraryPage() {
   const [creatingSample, setCreatingSample] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchFiles();
-  }, []);
+  const hasLoadedRef = useRef(false);
 
-  const fetchFiles = async () => {
-    setIsLoading(true);
+  const fetchFiles = useCallback(async (background = false) => {
+    if (!background) setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/files');
+      const q = query.trim();
+      // Server-side search covers full article content, not just title/preview.
+      const response = await fetch(`/api/files${q ? `?q=${encodeURIComponent(q)}` : ''}`);
       if (!response.ok) throw new Error('Failed to fetch files');
       const data: MarkdownFile[] = await response.json();
       setFiles(data);
@@ -96,7 +96,17 @@ export default function LibraryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [query]);
+
+  // Initial load immediately; subsequent searches debounced and in-background.
+  useEffect(() => {
+    const background = hasLoadedRef.current;
+    const timer = setTimeout(() => {
+      hasLoadedRef.current = true;
+      fetchFiles(background);
+    }, background ? 250 : 0);
+    return () => clearTimeout(timer);
+  }, [fetchFiles]);
 
   const handleDelete = (id: string) => {
     setFiles((prev) => prev.filter((file) => file.id !== id));
@@ -141,14 +151,9 @@ export default function LibraryPage() {
   }, [files, readState]);
 
   const visibleFiles = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let filtered = q
-      ? files.filter(
-          (f) =>
-            f.title.toLowerCase().includes(q) || f.preview.toLowerCase().includes(q)
-        )
-      : files;
-
+    // Text matching happens server-side (?q= covers full content); only the
+    // reading-state filter and sort remain client concerns.
+    let filtered = files;
     if (filter !== 'all') {
       filtered = filtered.filter((f) => readState(f.id) === filter);
     }
@@ -162,7 +167,7 @@ export default function LibraryPage() {
       return sort === 'newest' ? diff : -diff;
     });
     return sorted;
-  }, [files, query, sort, filter, readState]);
+  }, [files, sort, filter, readState]);
 
   return (
     <div className="min-h-screen bg-warm-radial text-foreground">
@@ -183,6 +188,11 @@ export default function LibraryPage() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            <Button asChild variant="ghost" size="icon" title="Reading stats">
+              <Link href="/stats">
+                <BarChart3 className="size-5" />
+              </Link>
+            </Button>
             <Button asChild variant="ghost" size="icon" title="My highlights">
               <Link href="/highlights">
                 <Highlighter className="size-5" />
@@ -239,13 +249,13 @@ export default function LibraryPage() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search files…"
+                placeholder="Search titles and content…"
                 className="pl-9"
                 aria-label="Search files"
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <LibraryImport onImported={fetchFiles} />
+              <LibraryImport onImported={() => fetchFiles(true)} />
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Sort
                 <select
@@ -274,9 +284,9 @@ export default function LibraryPage() {
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="mb-4 text-destructive">{error}</p>
-            <Button onClick={fetchFiles}>Try Again</Button>
+            <Button onClick={() => fetchFiles()}>Try Again</Button>
           </div>
-        ) : files.length === 0 ? (
+        ) : files.length === 0 && !query.trim() ? (
           <EmptyState onAddSample={handleAddSample} creatingSample={creatingSample} />
         ) : visibleFiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">

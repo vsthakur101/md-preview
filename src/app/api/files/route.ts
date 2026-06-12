@@ -4,8 +4,9 @@ import { auth } from '@/auth';
 import { fileInputSchema, buildPreview, estimateReadMinutes } from '@/lib/validation';
 import { enforceWriteLimit } from '@/lib/ratelimit';
 
-// GET all files belonging to the signed-in user
-export async function GET() {
+// GET all files belonging to the signed-in user. Optional `?q=` searches
+// title AND full article content (case-insensitive).
+export async function GET(request: NextRequest) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -13,8 +14,20 @@ export async function GET() {
   }
 
   try {
+    const q = request.nextUrl.searchParams.get('q')?.trim().slice(0, 200) ?? '';
+
     const files = await prisma.markdownFile.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
