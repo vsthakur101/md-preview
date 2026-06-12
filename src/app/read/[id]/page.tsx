@@ -25,7 +25,7 @@ export default async function ReadPage({ params }: { params: Promise<{ id: strin
     renderArticle(file.content),
     prisma.highlight.findMany({
       where: { fileId: file.id, userId: session.user.id },
-      select: { id: true, startOff: true, endOff: true, color: true, text: true },
+      select: { id: true, startOff: true, endOff: true, color: true, text: true, note: true },
       orderBy: { startOff: 'asc' },
     }),
     prisma.reaction.findMany({

@@ -14,7 +14,7 @@ export interface RelatedRead {
 
 interface Props {
   articleId: string;
-  highlights: { id: string; text: string; color: string }[];
+  highlights: { id: string; text: string; color: string; note?: string | null }[];
   related: RelatedRead[];
 }
 
@@ -57,7 +57,9 @@ export default function EndMatter({ articleId, highlights, related }: Props) {
             <h3 className="reading-endmatter-title">Here&rsquo;s what you saved</h3>
             <div className="reading-recap-actions">
               <CopyButton
-                text={highlights.map((h) => `> ${h.text}`).join('\n\n')}
+                text={highlights
+                  .map((h) => (h.note ? `> ${h.text}\n>\n> — ${h.note}` : `> ${h.text}`))
+                  .join('\n\n')}
                 label="Copy all"
               />
               <Link href="/highlights" className="reading-recap-all">
@@ -69,7 +71,10 @@ export default function EndMatter({ articleId, highlights, related }: Props) {
             {highlights.map((h) => (
               <li key={h.id}>
                 <span className={`reading-recap-dot reading-highlight-${h.color}`} />
-                <span className="reading-recap-text">{h.text}</span>
+                <span className="reading-recap-body">
+                  <span className="reading-recap-text">{h.text}</span>
+                  {h.note && <span className="reading-recap-note">{h.note}</span>}
+                </span>
               </li>
             ))}
           </ul>

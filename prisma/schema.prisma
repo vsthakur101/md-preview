@@ -43,6 +43,8 @@ model Highlight {
   endOff    Int
   text      String       @db.Text
   color     String       @default("yellow")
+  // Optional reader annotation attached to the highlight.
+  note      String?      @db.Text
   createdAt DateTime     @default(now())
   file      MarkdownFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)

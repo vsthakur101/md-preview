@@ -387,7 +387,12 @@ export default function Reader({
             <EndMatter
               articleId={articleId}
               related={related}
-              highlights={initialHighlights.map((h) => ({ id: h.id, text: h.text, color: h.color }))}
+              highlights={initialHighlights.map((h) => ({
+                id: h.id,
+                text: h.text,
+                color: h.color,
+                note: h.note ?? null,
+              }))}
             />
           )}
         </main>
