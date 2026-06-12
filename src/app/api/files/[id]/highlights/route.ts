@@ -5,6 +5,7 @@ import { auth } from '@/auth';
 type RouteParams = { params: Promise<{ id: string }> };
 
 const MAX_HIGHLIGHT_TEXT = 5000;
+const MAX_NOTE_LENGTH = 2000;
 
 function ownedFile(id: string, userId: string) {
   return prisma.markdownFile.findFirst({ where: { id, userId }, select: { id: true } });
@@ -62,6 +63,39 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Failed to create highlight:', error);
     return NextResponse.json({ error: 'Failed to create highlight' }, { status: 500 });
+  }
+}
+
+// PATCH — set or clear the note on one highlight (?hid=). Empty note = clear.
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { id } = await params;
+  const hid = new URL(request.url).searchParams.get('hid');
+  if (!hid) {
+    return NextResponse.json({ error: 'Missing hid' }, { status: 400 });
+  }
+
+  try {
+    const body = await request.json();
+    if (typeof body?.note !== 'string') {
+      return NextResponse.json({ error: 'Invalid note' }, { status: 400 });
+    }
+    const note = body.note.trim().slice(0, MAX_NOTE_LENGTH) || null;
+
+    const { count } = await prisma.highlight.updateMany({
+      where: { id: hid, fileId: id, userId: session.user.id },
+      data: { note },
+    });
+    if (count === 0) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, note });
+  } catch (error) {
+    console.error('Failed to update note:', error);
+    return NextResponse.json({ error: 'Failed to update note' }, { status: 500 });
   }
 }
 

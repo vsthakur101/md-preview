@@ -9,6 +9,7 @@ export interface InitialHighlight {
   endOff: number;
   color: string;
   text: string;
+  note?: string | null;
 }
 
 interface Props {
@@ -26,13 +27,26 @@ interface Selecting {
 
 const root = () => document.getElementById('article');
 
+/** Toggle the noted-marker class on every <mark> belonging to a highlight. */
+function setNotedClass(id: string, noted: boolean) {
+  document
+    .querySelectorAll(`mark[data-highlight-id="${id}"]`)
+    .forEach((m) => m.classList.toggle('has-note', noted));
+}
+
 export default function HighlightLayer({ articleId, initial }: Props) {
   const [sel, setSel] = useState<Selecting | null>(null);
   const [removeAt, setRemoveAt] = useState<{ x: number; y: number; id: string } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [noteEdit, setNoteEdit] = useState<{ id: string; x: number; y: number; draft: string } | null>(null);
+  const [noteSaving, setNoteSaving] = useState(false);
 
   // id → highlighted text, so the popover can copy without re-reading the DOM.
   const textsRef = useRef(new Map<string, string>());
+  // id → note. State (not a ref): the popover label reads it during render.
+  const [notes, setNotes] = useState(
+    () => new Map(initial.filter((h) => h.note).map((h) => [h.id, h.note as string]))
+  );
 
   // Re-apply saved highlights once the article is in the DOM.
   useEffect(() => {
@@ -41,6 +55,7 @@ export default function HighlightLayer({ articleId, initial }: Props) {
     for (const h of initial) {
       textsRef.current.set(h.id, h.text);
       applyHighlight(el, h.startOff, h.endOff, h.id, h.color);
+      if (h.note) setNotedClass(h.id, true);
     }
   }, [initial]);
 
@@ -77,9 +92,14 @@ export default function HighlightLayer({ articleId, initial }: Props) {
       if (mark?.dataset.highlightId) {
         const rect = mark.getBoundingClientRect();
         setSel(null);
+        setNoteEdit(null);
         setRemoveAt({ x: rect.left + rect.width / 2, y: rect.top, id: mark.dataset.highlightId });
-      } else if (!(e.target as HTMLElement).closest?.('.reading-hl-pop')) {
+      } else if (
+        !(e.target as HTMLElement).closest?.('.reading-hl-pop') &&
+        !(e.target as HTMLElement).closest?.('.reading-note-pop')
+      ) {
         setRemoveAt(null);
+        setNoteEdit(null);
       }
     };
     document.addEventListener('click', onClick);
@@ -122,6 +142,44 @@ export default function HighlightLayer({ articleId, initial }: Props) {
       setTimeout(() => setCopiedId(null), 1200);
     } catch {
       /* clipboard unavailable — ignore */
+    }
+  };
+
+  const openNoteEditor = () => {
+    if (!removeAt) return;
+    setNoteEdit({
+      id: removeAt.id,
+      x: removeAt.x,
+      y: removeAt.y,
+      draft: notes.get(removeAt.id) ?? '',
+    });
+    setRemoveAt(null);
+  };
+
+  const saveNote = async () => {
+    if (!noteEdit || noteSaving) return;
+    setNoteSaving(true);
+    try {
+      const res = await fetch(`/api/files/${articleId}/highlights?hid=${noteEdit.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: noteEdit.draft }),
+      });
+      if (res.ok) {
+        const { note } = (await res.json()) as { note: string | null };
+        setNotes((prev) => {
+          const next = new Map(prev);
+          if (note) next.set(noteEdit.id, note);
+          else next.delete(noteEdit.id);
+          return next;
+        });
+        setNotedClass(noteEdit.id, Boolean(note));
+        setNoteEdit(null);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setNoteSaving(false);
     }
   };
 
@@ -176,9 +234,45 @@ export default function HighlightLayer({ articleId, initial }: Props) {
           <button className="reading-hl-btn" onClick={copyHighlight}>
             {copiedId === removeAt.id ? 'Copied ✓' : 'Copy'}
           </button>
+          <button className="reading-hl-btn" onClick={openNoteEditor}>
+            {notes.has(removeAt.id) ? 'Edit note' : 'Note'}
+          </button>
           <button className="reading-hl-btn reading-hl-remove" onClick={deleteHighlight}>
             Remove
           </button>
+        </div>
+      )}
+
+      {noteEdit && (
+        <div
+          className="reading-note-pop"
+          style={{
+            position: 'fixed',
+            left: noteEdit.x,
+            top: Math.max(64, noteEdit.y - 10),
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <textarea
+            autoFocus
+            rows={3}
+            maxLength={2000}
+            placeholder="Add a note…"
+            value={noteEdit.draft}
+            onChange={(e) => setNoteEdit({ ...noteEdit, draft: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveNote();
+              if (e.key === 'Escape') setNoteEdit(null);
+            }}
+          />
+          <div className="reading-note-actions">
+            <button className="reading-note-cancel" onClick={() => setNoteEdit(null)}>
+              Cancel
+            </button>
+            <button className="reading-note-save" onClick={saveNote} disabled={noteSaving}>
+              {noteSaving ? 'Saving…' : 'Save note'}
+            </button>
+          </div>
         </div>
       )}
     </>

@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 interface FileGroup {
   fileId: string;
   title: string;
-  highlights: { id: string; text: string; color: string; createdAt: Date }[];
+  highlights: { id: string; text: string; color: string; note: string | null; createdAt: Date }[];
 }
 
 export default async function HighlightsPage() {
@@ -27,6 +27,7 @@ export default async function HighlightsPage() {
       id: true,
       text: true,
       color: true,
+      note: true,
       createdAt: true,
       file: { select: { id: true, title: true } },
     },
@@ -42,7 +43,13 @@ export default async function HighlightsPage() {
       byFile.set(h.file.id, group);
       groups.push(group);
     }
-    group.highlights.push({ id: h.id, text: h.text, color: h.color, createdAt: h.createdAt });
+    group.highlights.push({
+      id: h.id,
+      text: h.text,
+      color: h.color,
+      note: h.note,
+      createdAt: h.createdAt,
+    });
   }
 
   return (
@@ -84,7 +91,9 @@ export default async function HighlightsPage() {
                   <h2 className="min-w-0 truncate font-medium">{group.title}</h2>
                   <div className="flex shrink-0 items-center gap-2">
                     <CopyButton
-                      text={group.highlights.map((h) => `> ${h.text}`).join('\n\n')}
+                      text={group.highlights
+                        .map((h) => (h.note ? `> ${h.text}\n>\n> — ${h.note}` : `> ${h.text}`))
+                        .join('\n\n')}
                       label="Copy all"
                     />
                     <Button asChild size="sm" variant="ghost" className="text-primary">
@@ -102,9 +111,16 @@ export default async function HighlightsPage() {
                         aria-hidden
                         className={`highlight-dot highlight-dot-${h.color} mt-1.5 size-3 shrink-0 rounded-sm`}
                       />
-                      <blockquote className="min-w-0 flex-1 font-serif italic leading-relaxed text-secondary-foreground">
-                        {h.text}
-                      </blockquote>
+                      <div className="min-w-0 flex-1">
+                        <blockquote className="font-serif italic leading-relaxed text-secondary-foreground">
+                          {h.text}
+                        </blockquote>
+                        {h.note && (
+                          <p className="mt-1.5 border-l-2 border-primary/40 pl-2.5 text-sm text-muted-foreground">
+                            {h.note}
+                          </p>
+                        )}
+                      </div>
                       <CopyButton
                         text={h.text}
                         className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100"

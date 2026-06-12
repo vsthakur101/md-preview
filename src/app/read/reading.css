@@ -646,6 +646,72 @@
   background: rgba(96, 150, 224, 0.32);
 }
 
+/* Highlights carrying a note get a quiet dotted underline marker. */
+.reading-highlight.has-note {
+  border-bottom: 2px dotted color-mix(in srgb, var(--reading-accent) 70%, transparent);
+}
+
+/* Note editor popover */
+.reading-note-pop {
+  z-index: 70;
+  width: min(20rem, calc(100vw - 2rem));
+  background: var(--reading-card);
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.7rem;
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.24);
+  padding: 0.6rem;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.reading-note-pop textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 4rem;
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.45rem;
+  background: var(--reading-bg);
+  color: var(--reading-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.6rem;
+  outline: none;
+}
+.reading-note-pop textarea:focus-visible {
+  border-color: var(--reading-accent);
+}
+.reading-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.reading-note-cancel,
+.reading-note-save {
+  border: none;
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.reading-note-cancel {
+  background: none;
+  color: var(--reading-muted);
+}
+.reading-note-cancel:hover {
+  color: var(--reading-text);
+}
+.reading-note-save {
+  background: var(--reading-accent);
+  color: var(--brand-foreground);
+}
+.reading-note-save:hover {
+  background: var(--reading-accent-strong);
+}
+.reading-note-save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* Floating selection / remove toolbar */
 .reading-hl-pop {
   z-index: 70;
@@ -992,12 +1058,25 @@
   border-radius: 3px;
   margin-top: 0.35rem;
 }
+.reading-recap-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
 .reading-recap-text {
   font-family: var(--font-serif), Georgia, serif;
   font-size: 1.05rem;
   line-height: 1.5;
   color: var(--reading-muted-strong);
   font-style: italic;
+}
+.reading-recap-note {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--reading-muted);
+  border-left: 2px solid color-mix(in srgb, var(--reading-accent) 40%, transparent);
+  padding-left: 0.6rem;
 }
 
 .reading-related {
