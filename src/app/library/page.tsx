@@ -31,6 +31,8 @@ interface MarkdownFile {
   /** Server-synced reading position (cross-device). */
   serverFraction?: number;
   serverReadAt?: string | null;
+  /** Context around the search match, when ?q= matched content. */
+  snippet?: string | null;
 }
 
 interface ReadingState {
@@ -402,6 +404,8 @@ export default function LibraryPage() {
                 finished={reading?.finished[file.id] ?? false}
                 pinned={file.pinned ?? false}
                 tags={file.tags ?? []}
+                snippet={file.snippet ?? null}
+                highlightTerm={query}
                 allTags={allTags}
                 onDelete={handleDelete}
                 onPinToggle={handlePinToggle}

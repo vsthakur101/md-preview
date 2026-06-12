@@ -20,6 +20,10 @@ interface FileCardProps {
   finished?: boolean;
   pinned?: boolean;
   tags?: string[];
+  /** Context around the search match (replaces the preview when present). */
+  snippet?: string | null;
+  /** The active search term, for emphasizing matches in the snippet. */
+  highlightTerm?: string;
   /** Union of tags across the library, for editor suggestions. */
   allTags?: string[];
   onDelete: (id: string) => void;
@@ -48,6 +52,23 @@ function categoryColor(title: string): string {
   return 'var(--cat-neutral)';
 }
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Wrap case-insensitive occurrences of `term` in <mark>. */
+function emphasize(text: string, term: string): React.ReactNode {
+  if (!term.trim()) return text;
+  const parts = text.split(new RegExp(`(${escapeRegExp(term.trim())})`, 'ig'));
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <mark key={i} className="rounded-sm bg-accent-muted px-0.5 text-foreground">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
+
 export default function FileCard({
   id,
   title,
@@ -58,6 +79,8 @@ export default function FileCard({
   finished = false,
   pinned = false,
   tags = [],
+  snippet = null,
+  highlightTerm = '',
   allTags = [],
   onDelete,
   onPinToggle,
@@ -147,7 +170,7 @@ export default function FileCard({
           </div>
         </div>
         <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-          {preview || 'No preview available'}
+          {snippet ? emphasize(snippet, highlightTerm) : preview || 'No preview available'}
         </p>
       </Link>
 

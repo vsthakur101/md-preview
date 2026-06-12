@@ -4,6 +4,7 @@ import { ArrowLeft, Highlighter, BookOpen } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import CopyButton from '@/components/CopyButton';
+import DownloadTextButton from '@/components/DownloadTextButton';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -81,10 +82,28 @@ export default async function HighlightsPage() {
           <EmptyState />
         ) : (
           <div className="flex flex-col gap-8">
-            <p className="text-sm text-muted-foreground">
-              {highlights.length} highlight{highlights.length === 1 ? '' : 's'} across{' '}
-              {groups.length} article{groups.length === 1 ? '' : 's'}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {highlights.length} highlight{highlights.length === 1 ? '' : 's'} across{' '}
+                {groups.length} article{groups.length === 1 ? '' : 's'}
+              </p>
+              <DownloadTextButton
+                fileName="highlights.md"
+                label="Export all"
+                text={
+                  `# Highlights\n\n` +
+                  groups
+                    .map(
+                      (g) =>
+                        `## ${g.title}\n\n` +
+                        g.highlights
+                          .map((h) => (h.note ? `> ${h.text}\n>\n> — ${h.note}` : `> ${h.text}`))
+                          .join('\n\n')
+                    )
+                    .join('\n\n')
+                }
+              />
+            </div>
             {groups.map((group) => (
               <section key={group.fileId} className="rounded-xl border bg-card p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
