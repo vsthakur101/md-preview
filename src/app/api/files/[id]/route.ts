@@ -60,14 +60,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { title, content } = parsed.data;
+    const { title, content, tags } = parsed.data;
 
     // Scope the update to the owner so a user can never modify another user's
     // file by guessing its id. `updateMany` returns a count instead of throwing
-    // when no row matches the (id, userId) pair.
+    // when no row matches the (id, userId) pair. Tags are only touched when the
+    // caller sends them (so a content-only PATCH leaves existing tags alone).
     const { count } = await prisma.markdownFile.updateMany({
       where: { id, userId: session.user.id, deletedAt: null },
-      data: { title, content, preview: buildPreview(content) },
+      data: { title, content, preview: buildPreview(content), ...(tags ? { tags } : {}) },
     });
 
     if (count === 0) {

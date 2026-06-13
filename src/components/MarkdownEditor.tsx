@@ -15,6 +15,7 @@ import {
   ListCollapse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { listItemAction } from '@/lib/editor/list-continuation';
 
 interface MarkdownEditorProps {
   value: string;
@@ -113,8 +114,39 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     applyEdit(next, urlStart, urlStart + 3);
   };
 
+  /**
+   * On Enter inside a list/quote item, continue the marker on the next line
+   * (incrementing ordered numbers); on an empty item, remove the marker to
+   * exit the list. Returns true when it handled the key.
+   */
+  const continueListItem = (): boolean => {
+    const ta = textareaRef.current;
+    if (!ta) return false;
+    const { selectionStart: s, selectionEnd: e } = ta;
+    if (s !== e) return false; // active selection: let Enter behave normally
+
+    const lineStart = value.lastIndexOf('\n', s - 1) + 1;
+    const action = listItemAction(value.slice(lineStart, s));
+    if (!action) return false;
+
+    if (action.type === 'exit') {
+      const next = value.slice(0, lineStart) + value.slice(s);
+      applyEdit(next, lineStart, lineStart);
+    } else {
+      const next = value.slice(0, s) + action.insert + value.slice(s);
+      applyEdit(next, s + action.insert.length, s + action.insert.length);
+    }
+    return true;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const mod = e.metaKey || e.ctrlKey;
+    if (e.key === 'Enter' && !mod && !e.shiftKey) {
+      if (continueListItem()) {
+        e.preventDefault();
+        return;
+      }
+    }
     if (mod && e.key.toLowerCase() === 'b') {
       e.preventDefault();
       wrap('**');

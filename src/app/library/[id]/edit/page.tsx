@@ -3,13 +3,16 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownPreview from '@/components/MarkdownPreview';
+import { normalizeTags, MAX_TAG_LENGTH } from '@/lib/validation';
 
 interface MarkdownFile {
   id: string;
   title: string;
   content: string;
+  tags?: string[];
 }
 
 export default function FileEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +20,8 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +36,7 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
         const data: MarkdownFile = await response.json();
         setTitle(data.title);
         setContent(data.content);
+        setTags(data.tags ?? []);
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load file');
@@ -41,6 +47,11 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
 
     fetchFile();
   }, [id]);
+
+  const addTag = () => {
+    setTags((prev) => normalizeTags([...prev, tagDraft]));
+    setTagDraft('');
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -59,7 +70,7 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
       const response = await fetch(`/api/files/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), content }),
+        body: JSON.stringify({ title: title.trim(), content, tags }),
       });
 
       if (!response.ok) {
@@ -135,6 +146,39 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
             >
               {isSaving ? 'Saving...' : 'Save changes'}
             </button>
+          </div>
+          {/* Tags row */}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-11">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-meta text-foreground"
+              >
+                {tag}
+                <button
+                  onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label={`Remove tag ${tag}`}
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              value={tagDraft}
+              maxLength={MAX_TAG_LENGTH}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
+              placeholder={tags.length === 0 ? 'Add tags…' : 'Add tag…'}
+              className="h-6 w-28 bg-transparent text-meta text-foreground outline-none placeholder:text-muted-foreground"
+              aria-label="Add tag"
+            />
           </div>
           {error && <p className="mt-2 text-sm text-destructive pl-11">{error}</p>}
         </div>
