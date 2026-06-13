@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { listItemAction } from '@/lib/editor/list-continuation';
 import { linkifyPastedUrl } from '@/lib/editor/smart-paste';
+import { toggleWrap, applyHeadingAtCursor } from '@/lib/editor/markdown-format';
 
 interface MarkdownEditorProps {
   value: string;
@@ -56,15 +57,21 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     onChange(next);
   };
 
-  /** Wrap the current selection with `before`/`after` (e.g. **bold**). */
-  const wrap = (before: string, after = before) => {
+  /** Toggle an inline marker (`**`, `*`, `` ` ``) around the selection. */
+  const wrap = (marker: string) => {
     const ta = textareaRef.current;
     if (!ta) return;
     const { selectionStart: s, selectionEnd: e } = ta;
-    const selected = value.slice(s, e);
-    const next = value.slice(0, s) + before + selected + after + value.slice(e);
-    const start = s + before.length;
-    applyEdit(next, start, start + selected.length);
+    const r = toggleWrap(value, s, e, marker);
+    applyEdit(r.text, r.selStart, r.selEnd);
+  };
+
+  /** Set or toggle the heading level of the current line (no stacking). */
+  const heading = (level: number) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const r = applyHeadingAtCursor(value, ta.selectionStart, level);
+    applyEdit(r.text, r.selStart, r.selEnd);
   };
 
   /** Prefix each line spanning the selection (e.g. "# ", "- ", "> "). */
@@ -203,9 +210,9 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
       case 'code':
         return wrap('`');
       case 'h1':
-        return prefixLines('# ');
+        return heading(1);
       case 'h2':
-        return prefixLines('## ');
+        return heading(2);
       case 'ul':
         return prefixLines('- ');
       case 'ol':
