@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bold,
   Italic,
@@ -13,11 +13,13 @@ import {
   Quote,
   Lightbulb,
   ListCollapse,
+  ListTree,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { listItemAction } from '@/lib/editor/list-continuation';
 import { linkifyPastedUrl } from '@/lib/editor/smart-paste';
 import { toggleWrap, applyHeadingAtCursor } from '@/lib/editor/markdown-format';
+import { parseOutline } from '@/lib/editor/outline';
 
 interface MarkdownEditorProps {
   value: string;
@@ -42,6 +44,8 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Selection to restore after a controlled value update from a toolbar action.
   const pendingSelection = useRef<{ start: number; end: number } | null>(null);
+  const [outlineOpen, setOutlineOpen] = useState(false);
+  const outline = useMemo(() => parseOutline(value), [value]);
 
   useEffect(() => {
     if (pendingSelection.current && textareaRef.current) {
@@ -72,6 +76,18 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     if (!ta) return;
     const r = applyHeadingAtCursor(value, ta.selectionStart, level);
     applyEdit(r.text, r.selStart, r.selEnd);
+  };
+
+  /** Move the caret to a heading and scroll it near the top of the pane. */
+  const jumpToHeading = (offset: number) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.focus();
+    ta.setSelectionRange(offset, offset);
+    const lineIndex = value.slice(0, offset).split('\n').length - 1;
+    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+    ta.scrollTop = Math.max(0, lineIndex * lineHeight - lineHeight * 2);
+    setOutlineOpen(false);
   };
 
   /** Prefix each line spanning the selection (e.g. "# ", "- ", "> "). */
@@ -261,6 +277,38 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
               <Icon className="size-4" />
             </Button>
           ))}
+        </div>
+
+        {/* Outline / jump-to-heading */}
+        <div className="relative shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={`size-8 ${outlineOpen ? 'text-foreground' : 'text-muted-foreground'}`}
+            title="Outline"
+            aria-label="Document outline"
+            aria-expanded={outlineOpen}
+            disabled={outline.length === 0}
+            onClick={() => setOutlineOpen((v) => !v)}
+          >
+            <ListTree className="size-4" />
+          </Button>
+          {outlineOpen && outline.length > 0 && (
+            <div className="absolute right-0 top-9 z-20 max-h-80 w-64 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg">
+              {outline.map((item, i) => (
+                <button
+                  key={`${item.offset}-${i}`}
+                  type="button"
+                  onClick={() => jumpToHeading(item.offset)}
+                  className="block w-full truncate rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                  style={{ paddingLeft: `${0.5 + (item.level - 1) * 0.75}rem` }}
+                >
+                  {item.text}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <textarea
