@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles, BarChart3, Download } from 'lucide-react';
 import FileCard from '@/components/FileCard';
 import LibraryImport from '@/components/LibraryImport';
 import TrashPanel from '@/components/TrashPanel';
@@ -457,6 +457,19 @@ export default function LibraryPage() {
                 {selectMode ? 'Done' : 'Select'}
               </Button>
               <LibraryImport onImported={() => fetchFiles(true)} />
+              {files.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  title="Export library as JSON"
+                  // Attachment response downloads and leaves the page in place;
+                  // a Next <Link> would client-navigate and not trigger it.
+                  onClick={() => window.location.assign('/api/files/export')}
+                >
+                  <Download className="size-4" />
+                  Export
+                </Button>
+              )}
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Sort
                 <select
