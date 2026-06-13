@@ -80,6 +80,8 @@ export default function LibraryPage() {
 
   const hasLoadedRef = useRef(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  // Monotonic id so a slow earlier search can't overwrite a newer one's result.
+  const reqSeqRef = useRef(0);
 
   // "/" focuses search (unless already typing somewhere).
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function LibraryPage() {
   }, []);
 
   const fetchFiles = useCallback(async (background = false) => {
+    const seq = ++reqSeqRef.current;
     if (!background) setIsLoading(true);
     setError(null);
     try {
@@ -103,6 +106,8 @@ export default function LibraryPage() {
       const response = await fetch(`/api/files${q ? `?q=${encodeURIComponent(q)}` : ''}`);
       if (!response.ok) throw new Error('Failed to fetch files');
       const data: MarkdownFile[] = await response.json();
+      // A newer search/refresh started while this was in flight — drop it.
+      if (seq !== reqSeqRef.current) return;
       setFiles(data);
 
       // Merge per-file progress: the furthest of this device's localStorage
@@ -137,10 +142,11 @@ export default function LibraryPage() {
         goal: getDailyGoal(),
       });
     } catch (err) {
+      if (seq !== reqSeqRef.current) return; // superseded; let the newer one report
       console.error('Fetch error:', err);
       setError('Failed to load files. Please try again.');
     } finally {
-      setIsLoading(false);
+      if (seq === reqSeqRef.current) setIsLoading(false);
     }
   }, [query]);
 
