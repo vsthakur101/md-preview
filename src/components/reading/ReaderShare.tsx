@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { downloadMarkdown } from '@/lib/export-markdown';
+import { SHARE_EXPIRY_OPTIONS } from '@/lib/share-expiry';
 
 interface ReaderShareProps {
   articleId: string;
@@ -19,6 +20,7 @@ export default function ReaderShare({ articleId, title, initialShareId }: Reader
   const [shareId, setShareId] = useState(initialShareId);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [expiryDays, setExpiryDays] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +43,11 @@ export default function ReaderShare({ articleId, title, initialShareId }: Reader
     try {
       let id = shareId;
       if (!id) {
-        const res = await fetch(`/api/files/${articleId}/share`, { method: 'POST' });
+        const res = await fetch(`/api/files/${articleId}/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expiresInDays: expiryDays }),
+        });
         if (!res.ok) throw new Error('share failed');
         id = ((await res.json()) as { shareId: string }).shareId;
         setShareId(id);
@@ -107,6 +113,22 @@ export default function ReaderShare({ articleId, title, initialShareId }: Reader
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
           >
+            {!shareId && (
+              <label className="reading-share-expiry">
+                Expires
+                <select
+                  value={expiryDays}
+                  onChange={(e) => setExpiryDays(Number(e.target.value))}
+                  disabled={busy}
+                >
+                  {SHARE_EXPIRY_OPTIONS.map((o) => (
+                    <option key={o.days} value={o.days}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <button className="reading-share-opt" onClick={enableAndCopy} disabled={busy}>
               {copied ? 'Link copied ✓' : shareId ? 'Copy public link' : 'Create public link'}
             </button>

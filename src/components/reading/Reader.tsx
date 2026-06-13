@@ -181,10 +181,11 @@ export default function Reader({
         savePosition(articleId, frac);
 
         // Daily-goal credit: small forward deltas only, so TOC jumps and the
-        // resume scroll don't count as "minutes read".
+        // resume scroll don't count as "minutes read". Owner reading only — a
+        // public share viewer's goal/streak is about *their* library, not this.
         const prev = creditFracRef.current;
         creditFracRef.current = frac;
-        if (prev !== null) {
+        if (!publicView && prev !== null) {
           const delta = frac - prev;
           if (delta > 0 && delta <= 0.15) addReadingMinutes(minutes * delta);
         }

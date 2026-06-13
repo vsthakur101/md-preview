@@ -79,10 +79,10 @@ npx prisma db push   # apply schema changes (no migration history in this repo)
 
 ## Gotchas
 
-- The dev DB tracks `feat/reading-platform`'s schema (`shareId`, `MarkdownFile.pinned`,
-  `MarkdownFile.tags`, `MarkdownFile.deletedAt`, `Highlight.note`, `ReadingProgress`
-  table); `main`'s schema may lag behind it. Reconcile before `prisma db push` from
-  a fresh branch.
+- The dev DB tracks `feat/reading-platform`'s schema (`shareId`, `shareExpiresAt`,
+  `MarkdownFile.pinned`, `MarkdownFile.tags`, `MarkdownFile.deletedAt`,
+  `Highlight.note`, `ReadingProgress` table); `main`'s schema may lag behind it.
+  Reconcile before `prisma db push` from a fresh branch.
 - File deletes are soft (`deletedAt`); every owner-scoped query must filter
   `deletedAt: null`. Purge of 30-day-old rows piggybacks on `GET /api/files`.
 - `MarkdownFile.userId` is required (`NOT NULL`); new rows must set it.

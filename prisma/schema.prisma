@@ -19,6 +19,8 @@ model MarkdownFile {
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Null = private. When set, the file is publicly viewable at /share/{shareId}.
   shareId    String?           @unique
+  // Optional expiry for the share link; null = never expires.
+  shareExpiresAt DateTime?
   // Pinned files surface first in the library.
   pinned     Boolean           @default(false)
   // Normalized (lowercase, deduped) labels for library organization.

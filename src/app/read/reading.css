@@ -1055,6 +1055,24 @@
 .reading-share-revoke {
   color: color-mix(in srgb, var(--cat-security) 80%, var(--reading-text));
 }
+.reading-share-expiry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--reading-muted);
+}
+.reading-share-expiry select {
+  background: var(--reading-bg);
+  border: 1px solid var(--reading-card-border);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.78rem;
+  color: var(--reading-text);
+  outline: none;
+}
 .reading-share-url {
   padding: 0 0.6rem 0.3rem;
   font-size: 0.72rem;

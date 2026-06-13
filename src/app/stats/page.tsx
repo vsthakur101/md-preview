@@ -4,6 +4,7 @@ import { ArrowLeft, BarChart3, BookOpen, Highlighter } from 'lucide-react';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { estimateReadMinutes } from '@/lib/validation';
+import { aggregateTagInsights } from '@/lib/reading/insights';
 import StreakCard from '@/components/StreakCard';
 import GoalCard from '@/components/GoalCard';
 import ReadingHistoryCard from '@/components/ReadingHistoryCard';
@@ -32,6 +33,7 @@ export default async function StatsPage() {
         id: true,
         title: true,
         content: true,
+        tags: true,
         progress: { where: { userId }, select: { fraction: true } },
       },
     }),
@@ -63,6 +65,15 @@ export default async function StatsPage() {
     if (fraction >= 0.97) finished++;
     else if (fraction > 0.03) inProgress++;
   }
+
+  // Per-topic reading breakdown (top 8 tags by article count).
+  const topics = aggregateTagInsights(
+    files.map((f) => ({
+      tags: f.tags,
+      minutes: estimateReadMinutes(f.content),
+      fraction: f.progress[0]?.fraction ?? 0,
+    }))
+  ).slice(0, 8);
 
   const stats: { label: string; value: string; hint: string }[] = [
     {
@@ -157,6 +168,36 @@ export default async function StatsPage() {
                         {pct}%
                       </span>
                     </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {topics.length > 0 && (
+          <section className="mt-6 rounded-xl border bg-card p-5">
+            <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Topics
+            </p>
+            <ul className="flex flex-col gap-3">
+              {topics.map((t) => {
+                const ratio = t.total > 0 ? t.finished / t.total : 0;
+                return (
+                  <li key={t.tag} className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 truncate text-sm font-medium" title={t.tag}>
+                      #{t.tag}
+                    </span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-primary"
+                        style={{ width: `${Math.round(ratio * 100)}%` }}
+                      />
+                    </span>
+                    <span className="w-28 shrink-0 text-right text-meta tabular-nums text-muted-foreground">
+                      {t.finished}/{t.total} read
+                      {t.minutesRead > 0 ? ` · ${formatMinutes(t.minutesRead)}` : ''}
+                    </span>
                   </li>
                 );
               })}

@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { renderArticle } from '@/lib/reading/markdown';
+import { isShareExpired } from '@/lib/share-expiry';
 import Reader from '@/components/reading/Reader';
 
 export const dynamic = 'force-dynamic';
@@ -23,9 +25,24 @@ export default async function SharePage({
 
   const file = await prisma.markdownFile.findFirst({
     where: { shareId, deletedAt: null },
-    select: { id: true, title: true, content: true },
+    select: { id: true, title: true, content: true, shareExpiresAt: true },
   });
   if (!file) notFound();
+
+  // An expired link 404s for content but shows a friendly explanation.
+  if (isShareExpired(file.shareExpiresAt)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center text-foreground">
+        <h1 className="text-lg font-semibold">This link has expired</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          The owner shared this article with a time limit that has passed. Ask them for a fresh link.
+        </p>
+        <Link href="/" className="text-sm font-medium text-primary hover:underline">
+          Go to md-preview
+        </Link>
+      </div>
+    );
+  }
 
   const { html, headings, minutes } = await renderArticle(file.content);
 

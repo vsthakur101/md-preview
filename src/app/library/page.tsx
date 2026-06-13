@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, FileText, Plus, LibraryBig, BookOpen, Highlighter, Sparkles, BarChart3, Download } from 'lucide-react';
 import FileCard from '@/components/FileCard';
 import LibraryImport from '@/components/LibraryImport';
 import TrashPanel from '@/components/TrashPanel';
@@ -80,6 +80,8 @@ export default function LibraryPage() {
 
   const hasLoadedRef = useRef(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  // Monotonic id so a slow earlier search can't overwrite a newer one's result.
+  const reqSeqRef = useRef(0);
 
   // "/" focuses search (unless already typing somewhere).
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function LibraryPage() {
   }, []);
 
   const fetchFiles = useCallback(async (background = false) => {
+    const seq = ++reqSeqRef.current;
     if (!background) setIsLoading(true);
     setError(null);
     try {
@@ -103,6 +106,8 @@ export default function LibraryPage() {
       const response = await fetch(`/api/files${q ? `?q=${encodeURIComponent(q)}` : ''}`);
       if (!response.ok) throw new Error('Failed to fetch files');
       const data: MarkdownFile[] = await response.json();
+      // A newer search/refresh started while this was in flight — drop it.
+      if (seq !== reqSeqRef.current) return;
       setFiles(data);
 
       // Merge per-file progress: the furthest of this device's localStorage
@@ -137,10 +142,11 @@ export default function LibraryPage() {
         goal: getDailyGoal(),
       });
     } catch (err) {
+      if (seq !== reqSeqRef.current) return; // superseded; let the newer one report
       console.error('Fetch error:', err);
       setError('Failed to load files. Please try again.');
     } finally {
-      setIsLoading(false);
+      if (seq === reqSeqRef.current) setIsLoading(false);
     }
   }, [query]);
 
@@ -457,6 +463,19 @@ export default function LibraryPage() {
                 {selectMode ? 'Done' : 'Select'}
               </Button>
               <LibraryImport onImported={() => fetchFiles(true)} />
+              {files.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  title="Export library as JSON"
+                  // Attachment response downloads and leaves the page in place;
+                  // a Next <Link> would client-navigate and not trigger it.
+                  onClick={() => window.location.assign('/api/files/export')}
+                >
+                  <Download className="size-4" />
+                  Export
+                </Button>
+              )}
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Sort
                 <select
