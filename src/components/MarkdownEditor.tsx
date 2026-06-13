@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { listItemAction } from '@/lib/editor/list-continuation';
+import { linkifyPastedUrl } from '@/lib/editor/smart-paste';
 
 interface MarkdownEditorProps {
   value: string;
@@ -139,6 +140,19 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     return true;
   };
 
+  // Smart paste: bare URL over a selection → markdown link.
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const { selectionStart: s, selectionEnd: el } = ta;
+    if (s === el) return;
+    const link = linkifyPastedUrl(e.clipboardData.getData('text'), value.slice(s, el));
+    if (!link) return;
+    e.preventDefault();
+    const next = value.slice(0, s) + link + value.slice(el);
+    applyEdit(next, s + link.length, s + link.length);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const mod = e.metaKey || e.ctrlKey;
     if (e.key === 'Enter' && !mod && !e.shiftKey) {
@@ -248,6 +262,7 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         placeholder={PLACEHOLDER}
         className="scrollbar-thin flex-1 w-full resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none sm:p-4"
         spellCheck={false}

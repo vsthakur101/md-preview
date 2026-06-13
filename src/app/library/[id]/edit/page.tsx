@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useRef, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
@@ -25,6 +25,9 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Snapshot of the loaded file, for dirty detection.
+  const savedSnapshot = useRef<string>('');
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     const fetchFile = async () => {
@@ -37,6 +40,11 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
         setTitle(data.title);
         setContent(data.content);
         setTags(data.tags ?? []);
+        savedSnapshot.current = JSON.stringify({
+          title: data.title,
+          content: data.content,
+          tags: data.tags ?? [],
+        });
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load file');
@@ -47,6 +55,23 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
 
     fetchFile();
   }, [id]);
+
+  // Dirty whenever the editable fields drift from the loaded snapshot.
+  useEffect(() => {
+    if (isLoading) return;
+    setIsDirty(JSON.stringify({ title, content, tags }) !== savedSnapshot.current);
+  }, [title, content, tags, isLoading]);
+
+  // Warn before leaving with unsaved changes (browser-native dialog).
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
 
   const addTag = () => {
     setTags((prev) => normalizeTags([...prev, tagDraft]));
@@ -84,6 +109,24 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
       setIsSaving(false);
     }
   };
+
+  // Cmd/Ctrl+S to save. The handler is kept in a ref (synced in an effect, not
+  // during render) so the keydown listener can mount once yet call the latest
+  // closure over title/content/tags.
+  const saveRef = useRef(handleSave);
+  useEffect(() => {
+    saveRef.current = handleSave;
+  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   if (isLoading) {
     return (
@@ -139,9 +182,13 @@ export default function FileEditPage({ params }: { params: Promise<{ id: string 
               placeholder="Untitled"
               className="flex-1 min-w-0 px-3 py-1.5 text-base sm:text-lg font-semibold bg-transparent text-foreground border border-transparent hover:border-border focus:border-ring rounded-lg focus:outline-none"
             />
+            {isDirty && !isSaving && (
+              <span className="hidden text-meta text-muted-foreground sm:inline">Unsaved</span>
+            )}
             <button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !isDirty}
+              title="Save changes (⌘/Ctrl+S)"
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-brand-hover rounded-lg transition-colors disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : 'Save changes'}
