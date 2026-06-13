@@ -6,6 +6,7 @@ import { UploadCloud, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MAX_CONTENT_BYTES, MAX_TITLE_LENGTH } from '@/lib/validation';
 import { parseFrontmatter } from '@/lib/frontmatter';
+import { parseLibraryImport } from '@/lib/library-import';
 
 interface LibraryImportProps {
   /** Called after at least one file was imported successfully. */
@@ -18,6 +19,16 @@ interface ImportSummary {
 }
 
 const ACCEPTED = /\.(md|markdown)$/i;
+const JSON_FILE = /\.json$/i;
+// A backup bundles many files, so allow a much larger upload than one article.
+const MAX_JSON_BYTES = 10_000_000;
+
+interface PendingEntry {
+  source: string; // for error reporting
+  title: string;
+  content: string;
+  tags: string[];
+}
 
 /** Title = first `# Heading` if present, else the file name. */
 function deriveTitle(fileName: string, content: string): string {
@@ -45,8 +56,63 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
     setSummary(null);
     const result: ImportSummary = { ok: 0, failed: [] };
 
-    // Duplicate guard: skip files whose title is already in the library
-    // (and dedupe within the batch itself).
+    // Phase 1: read & parse every selected file into normalized entries.
+    // `.json` library backups expand into many entries; `.md` files into one.
+    const pending: PendingEntry[] = [];
+    for (const file of files) {
+      if (JSON_FILE.test(file.name)) {
+        if (file.size > MAX_JSON_BYTES) {
+          result.failed.push({ name: file.name, reason: 'backup too large' });
+          continue;
+        }
+        let text: string;
+        try {
+          text = await file.text();
+        } catch {
+          result.failed.push({ name: file.name, reason: 'could not read file' });
+          continue;
+        }
+        const parsed = parseLibraryImport(text);
+        if (!parsed.ok) {
+          result.failed.push({ name: file.name, reason: parsed.error });
+          continue;
+        }
+        for (const entry of parsed.entries) {
+          if (entry.content.length > MAX_CONTENT_BYTES) {
+            result.failed.push({ name: entry.title, reason: 'larger than 256 KB' });
+            continue;
+          }
+          pending.push({ source: entry.title, ...entry });
+        }
+        if (parsed.skipped > 0) {
+          result.failed.push({ name: file.name, reason: `${parsed.skipped} malformed skipped` });
+        }
+      } else if (ACCEPTED.test(file.name)) {
+        if (file.size > MAX_CONTENT_BYTES) {
+          result.failed.push({ name: file.name, reason: 'larger than 256 KB' });
+          continue;
+        }
+        let raw: string;
+        try {
+          raw = await file.text();
+        } catch {
+          result.failed.push({ name: file.name, reason: 'could not read file' });
+          continue;
+        }
+        // Frontmatter wins for title/tags and is stripped from the stored body.
+        const { title: fmTitle, tags, body: content } = parseFrontmatter(raw);
+        if (!content.trim()) {
+          result.failed.push({ name: file.name, reason: 'empty file' });
+          continue;
+        }
+        const title = fmTitle?.slice(0, MAX_TITLE_LENGTH) || deriveTitle(file.name, content);
+        pending.push({ source: file.name, title, content, tags });
+      } else {
+        result.failed.push({ name: file.name, reason: 'unsupported file' });
+      }
+    }
+
+    // Phase 2: dedupe against the library (and within the batch), then create.
     const existingTitles = new Set<string>();
     try {
       const res = await fetch('/api/files');
@@ -59,44 +125,29 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
       /* no list, no dedupe — imports still proceed */
     }
 
-    for (const file of files) {
-      if (!ACCEPTED.test(file.name)) {
-        result.failed.push({ name: file.name, reason: 'not a .md file' });
+    for (const entry of pending) {
+      const key = entry.title.trim().toLowerCase();
+      if (existingTitles.has(key)) {
+        result.failed.push({ name: entry.source, reason: 'already in library' });
         continue;
       }
-      if (file.size > MAX_CONTENT_BYTES) {
-        result.failed.push({ name: file.name, reason: 'larger than 256 KB' });
-        continue;
-      }
+      existingTitles.add(key);
       try {
-        const raw = await file.text();
-        // Frontmatter wins for title/tags and is stripped from the stored body.
-        const { title: fmTitle, tags, body: content } = parseFrontmatter(raw);
-        if (!content.trim()) {
-          result.failed.push({ name: file.name, reason: 'empty file' });
-          continue;
-        }
-        const title = fmTitle?.slice(0, MAX_TITLE_LENGTH) || deriveTitle(file.name, content);
-        if (existingTitles.has(title.trim().toLowerCase())) {
-          result.failed.push({ name: file.name, reason: 'already in library' });
-          continue;
-        }
-        existingTitles.add(title.trim().toLowerCase());
         const res = await fetch('/api/files', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content, tags }),
+          body: JSON.stringify({ title: entry.title, content: entry.content, tags: entry.tags }),
         });
         if (res.ok) {
           result.ok++;
         } else if (res.status === 429) {
-          result.failed.push({ name: file.name, reason: 'rate limit reached — try again shortly' });
+          result.failed.push({ name: entry.source, reason: 'rate limit reached — try again shortly' });
           break; // No point hammering the limiter with the rest.
         } else {
-          result.failed.push({ name: file.name, reason: 'save failed' });
+          result.failed.push({ name: entry.source, reason: 'save failed' });
         }
       } catch {
-        result.failed.push({ name: file.name, reason: 'could not read file' });
+        result.failed.push({ name: entry.source, reason: 'could not save' });
       }
     }
 
@@ -147,18 +198,24 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
       <input
         ref={inputRef}
         type="file"
-        accept=".md,.markdown"
+        accept=".md,.markdown,.json"
         multiple
         className="hidden"
-        aria-label="Import markdown files"
+        aria-label="Import markdown files or a library backup"
         onChange={(e) => {
           if (e.target.files) importFiles(e.target.files);
           e.target.value = ''; // allow re-importing the same selection
         }}
       />
-      <Button variant="outline" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        title="Import .md files or a .json library backup"
+        onClick={() => inputRef.current?.click()}
+      >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <UploadCloud className="size-4" />}
-        Import .md
+        Import
       </Button>
 
       {summary && (
@@ -189,7 +246,7 @@ export default function LibraryImport({ onImported }: LibraryImportProps) {
           >
             <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary bg-card px-10 py-8 text-center shadow-2xl">
               <UploadCloud className="size-8 text-primary" />
-              <p className="font-medium text-foreground">Drop your .md files to import</p>
+              <p className="font-medium text-foreground">Drop .md files or a .json backup</p>
               <p className="text-sm text-muted-foreground">They&rsquo;ll be added straight to your library</p>
             </div>
           </motion.div>
