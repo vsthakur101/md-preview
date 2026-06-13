@@ -231,3 +231,62 @@ body {
 .prose input[type="checkbox"] {
   margin-right: 0.5rem;
 }
+
+/*
+ * Custom reading blocks in the editor preview (:::key, :::aside, pull-quotes).
+ * The reader styles these via reading.css scoped to .reader-root; the editor
+ * preview needs its own scoped copy so writers see what readers will get.
+ */
+.md-preview-prose .key-callout {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--brand);
+  border-radius: 0.6rem;
+}
+.md-preview-prose .key-callout-label {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 0.4rem;
+}
+.md-preview-prose .key-callout > p:last-child {
+  margin-bottom: 0;
+}
+.md-preview-prose .aside-block {
+  margin: 1.5rem 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.6rem;
+  background: var(--bg-raised);
+  padding: 0 1.25rem;
+}
+.md-preview-prose .aside-summary {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.85rem 0;
+  list-style: none;
+}
+.md-preview-prose .aside-summary::-webkit-details-marker {
+  display: none;
+}
+.md-preview-prose .aside-summary::before {
+  content: "› ";
+  color: var(--brand);
+}
+.md-preview-prose .aside-block[open] > .aside-summary::before {
+  content: "⌄ ";
+}
+.md-preview-prose .pullquote {
+  border-left: 3px solid var(--brand);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--brand-hover);
+  font-size: 1.15em;
+}
