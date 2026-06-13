@@ -11,6 +11,8 @@ import {
   List,
   ListOrdered,
   Quote,
+  Lightbulb,
+  ListCollapse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -78,6 +80,27 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     applyEdit(next, lineStart, lineStart + replaced.length);
   };
 
+  /**
+   * Insert a fenced directive block (`:::key` / `:::aside`) around the
+   * selection, padded with blank lines so it parses as its own block. The
+   * body text lands selected so the writer can type over it.
+   */
+  const insertDirective = (name: 'key' | 'aside') => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const { selectionStart: s, selectionEnd: e } = ta;
+    const body =
+      value.slice(s, e) || (name === 'key' ? 'Your key takeaway.' : 'Optional deep-dive detail.');
+    const open = name === 'aside' ? ':::aside{label="Deep dive"}' : ':::key';
+    // Ensure a blank line before the block unless we're at the very start.
+    const needsLeadingBreak = s > 0 && !value.slice(0, s).endsWith('\n\n');
+    const lead = s === 0 ? '' : needsLeadingBreak ? '\n\n' : '';
+    const snippet = `${lead}${open}\n${body}\n:::\n`;
+    const next = value.slice(0, s) + snippet + value.slice(e);
+    const bodyStart = s + lead.length + open.length + 1;
+    applyEdit(next, bodyStart, bodyStart + body.length);
+  };
+
   /** Insert a markdown link around the selection, cursor landing in the URL. */
   const insertLink = () => {
     const ta = textareaRef.current;
@@ -119,7 +142,9 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     | 'h2'
     | 'ul'
     | 'ol'
-    | 'quote';
+    | 'quote'
+    | 'key'
+    | 'aside';
 
   const runTool = (id: ToolId) => {
     switch (id) {
@@ -141,6 +166,10 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
         return prefixLines('1. ');
       case 'quote':
         return prefixLines('> ');
+      case 'key':
+        return insertDirective('key');
+      case 'aside':
+        return insertDirective('aside');
     }
   };
 
@@ -157,6 +186,8 @@ export default function MarkdownEditor({ value, onChange }: MarkdownEditorProps)
     { icon: List, label: 'Bullet list', id: 'ul' },
     { icon: ListOrdered, label: 'Numbered list', id: 'ol' },
     { icon: Quote, label: 'Quote', id: 'quote' },
+    { icon: Lightbulb, label: 'Key takeaway (:::key)', id: 'key' },
+    { icon: ListCollapse, label: 'Aside / deep-dive (:::aside)', id: 'aside' },
   ];
 
   return (
